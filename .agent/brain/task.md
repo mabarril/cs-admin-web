@@ -18,7 +18,7 @@
 
 ## Módulos Principais
 
-### Fase 3: Módulo de Autenticação
+### Fase 3: Módulo de Autenticação ✅ CONCLUÍDA
 - [x] Feature branch criada (feature/auth-module)
 - [x] Plano de implementação do módulo de autenticação
 - [x] Criar models e interfaces (UserProfile, UserRole)
@@ -32,9 +32,10 @@
 - [x] Compilação bem-sucedida
 - [x] Script SQL para criar usuário admin
 - [x] Guia de testes manuais (TESTING_AUTH.md)
-- [ ] Testes manuais de fluxo completo (aguardando usuário)
-- [ ] Criar usuário admin no Supabase
-- [ ] Merge para develop
+- [x] Criar usuário admin no Supabase
+- [x] Corrigir API Key do Supabase
+- [x] Testes de login funcionando
+- [ ] Merge para develop (próximo passo)
 
 ### Próximas Fases
 - [ ] Gestão de Membros
