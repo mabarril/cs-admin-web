@@ -67,12 +67,7 @@ export class AuthService {
      */
     async signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const { error } = await this.supabase.signIn(email, password);
-
-            if (error) {
-                return { success: false, error: error.message };
-            }
-
+            await this.supabase.signIn(email, password);
             // User profile will be loaded automatically by the subscription
             return { success: true };
         } catch (err: any) {
@@ -94,12 +89,7 @@ export class AuthService {
      */
     async signUp(email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const { error } = await this.supabase.signUp(email, password);
-
-            if (error) {
-                return { success: false, error: error.message };
-            }
-
+            await this.supabase.signUp(email, password, { full_name: fullName });
             // Note: User profile should be created by admin with appropriate role
             return {
                 success: true,
@@ -115,12 +105,7 @@ export class AuthService {
      */
     async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const { error } = await this.supabase.resetPassword(email);
-
-            if (error) {
-                return { success: false, error: error.message };
-            }
-
+            await this.supabase.resetPassword(email);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message || 'Erro ao solicitar reset de senha' };
@@ -132,12 +117,7 @@ export class AuthService {
      */
     async updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const { error } = await this.supabase.updatePassword(newPassword);
-
-            if (error) {
-                return { success: false, error: error.message };
-            }
-
+            await this.supabase.updatePassword(newPassword);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message || 'Erro ao atualizar senha' };
