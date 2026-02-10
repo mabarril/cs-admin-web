@@ -28,8 +28,11 @@
 - [x] Implementar componentes (Login, ForgotPassword, AccessDenied)
 - [x] Criar Header e Sidebar com controle de acesso
 - [x] Configurar rotas com guards
-- [ ] Testes unitários
-- [ ] Testes manuais de fluxo completo
+- [x] Corrigir erros de TypeScript
+- [x] Compilação bem-sucedida
+- [x] Script SQL para criar usuário admin
+- [x] Guia de testes manuais (TESTING_AUTH.md)
+- [ ] Testes manuais de fluxo completo (aguardando usuário)
 - [ ] Criar usuário admin no Supabase
 - [ ] Merge para develop
 

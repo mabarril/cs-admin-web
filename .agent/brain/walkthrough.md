@@ -1,259 +1,239 @@
-# Walkthrough: Configuração do Supabase
+# Walkthrough: Implementação do Módulo de Autenticação
 
 ## Objetivo
-Implementar a configuração completa do Supabase como backend do projeto, incluindo scripts SQL, serviços Angular, configuração de ambiente e documentação.
+Implementar módulo completo de autenticação com login, controle de acesso baseado em roles, guards de rota e componentes de UI.
 
 ## Mudanças Implementadas
 
-### 📁 Estrutura de Diretórios Criada
+### 📦 Core - Models
 
-```
-cs-admin-web/
-├── supabase/
-│   └── migrations/          # Scripts SQL
-├── docs/                    # Documentação
-└── src/
-    ├── environments/        # Configurações de ambiente
-    └── app/core/services/   # Serviços Angular
-```
+#### [user-profile.model.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/models/user-profile.model.ts)
+- Tipo `UserRole` com 5 perfis: admin, secretary, treasury, counselor, board
+- Interface `UserProfile` com campos do banco de dados
+- Constantes `ROLE_NAMES` para exibição em português
+- Mapeamento `ROLE_PERMISSIONS` para controle de acesso
 
 ---
 
-## 🗄️ Scripts SQL (6 arquivos)
+### 🔧 Core - Services
 
-### [01_schema.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/01_schema.sql)
-**15 tabelas criadas** organizadas por módulos:
-
-**Autenticação**:
-- `user_profiles` - Perfis de usuários com roles
-
-**Cadastros Base**:
-- `units` - Unidades do clube
-- `classes` - Classes de desbravadores (com cores)
-- `specialty_types` - Tipos de especialidades (com cores)
-- `specialties` - Especialidades disponíveis
-- `pathfinders` - Cadastro de desbravadores
-- `pathfinder_specialties` - Especialidades conquistadas
-
-**Módulo Financeiro**:
-- `monthly_fees` - Controle de mensalidades
-- `transaction_categories` - Categorias de transações
-- `cash_transactions` - Transações de caixa
-- `costs` - Controle de custos/projetos
-
-**Módulo Administrativo**:
-- `assets` - Patrimônio do clube
-- `minutes` - Livro de atas
-- `acts` - Livro de atos
-- `exit_authorizations` - Autorizações de saída
-
-### [02_indexes.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/02_indexes.sql)
-**Índices de otimização** criados:
-- Índices em foreign keys
-- Índices em campos de busca frequente (status, datas)
-- Índices compostos para queries complexas
-
-### [03_triggers.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/03_triggers.sql)
-**Functions e triggers** implementados:
-- `update_updated_at_column()` - Atualiza `updated_at` automaticamente
-- Triggers para todas as tabelas com `updated_at`
-- `update_overdue_monthly_fees()` - Atualiza mensalidades vencidas
-- `calculate_age()` - Calcula idade a partir da data de nascimento
-
-### [04_views.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/04_views.sql)
-**7 views para relatórios**:
-- `vw_cash_flow` - Fluxo de caixa com saldo acumulado
-- `vw_pathfinder_details` - Desbravadores com unidade, classe e especialidades
-- `vw_monthly_fees_summary` - Resumo mensal de mensalidades
-- `vw_pathfinder_specialties` - Especialidades por desbravador
-- `vw_active_assets` - Patrimônio ativo
-- `vw_financial_summary_by_category` - Resumo financeiro por categoria
-- `vw_pathfinders_by_unit` - Estatísticas por unidade
-
-### [05_rls.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/05_rls.sql)
-**Row Level Security** configurado:
-- Functions: `get_user_role()`, `is_admin()`
-- RLS habilitado em todas as 15 tabelas
-- Políticas baseadas em roles:
-  - **admin**: Acesso total
-  - **secretary**: Cadastros e administrativo
-  - **treasury**: Financeiro
-  - **counselor**: Desbravadores e especialidades
-  - **board**: Atas, atos e custos
-
-### [06_seed.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/06_seed.sql)
-**Dados iniciais**:
-- 6 classes padrão (Amigo, Companheiro, Pesquisador, etc.) com cores
-- 8 tipos de especialidades com cores
-- 14 categorias de transações financeiras
-
-### [README.md](file:///home/barril/workspace/cs-admin-web/supabase/migrations/README.md)
-Instruções de execução dos scripts SQL
-
----
-
-## 🔧 Serviços Angular
-
-### [supabase.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/supabase.service.ts)
-**Serviço completo do Supabase** com:
-
-**Autenticação**:
+#### [auth.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/auth.service.ts)
+**Métodos de autenticação:**
 - `signIn()` - Login com email/senha
-- `signOut()` - Logout
-- `signUp()` - Registro de usuário
-- `resetPassword()` - Reset de senha
-- `updatePassword()` - Atualizar senha
+- `signOut()` - Logout e redirect para login
+- `signUp()` - Registro de usuário (aguarda aprovação de admin)
+- `resetPassword()` - Envio de email de recuperação
+- `updatePassword()` - Atualização de senha
 
-**Observables**:
-- `user$` - Observable do usuário atual
-- `session$` - Observable da sessão
-- `currentUser` - Snapshot do usuário
-- `isAuthenticated` - Verificação de autenticação
+**Gerenciamento de estado:**
+- `currentUserProfile$` - Observable do perfil do usuário
+- `isAuthenticated` - Verifica se usuário está autenticado e ativo
+- `hasRole()` / `hasAnyRole()` - Verificação de permissões
+- `isAdmin` - Atalho para verificar se é admin
 
-**Helpers**:
-- `from()` - Queries SELECT
-- `rpc()` - Remote Procedure Calls
-- `storage` - Acesso ao Storage
-- `client` - Cliente Supabase direto
-
----
-
-## ⚙️ Configuração de Ambiente
-
-### [environment.ts](file:///home/barril/workspace/cs-admin-web/src/environments/environment.ts)
-Configuração de desenvolvimento:
-```typescript
-{
-  production: false,
-  supabaseUrl: 'YOUR_SUPABASE_URL',
-  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
-  appName: 'Sistema de Gerenciamento de Clube de Desbravadores',
-  appVersion: '0.1.0'
-}
-```
-
-### [environment.prod.ts](file:///home/barril/workspace/cs-admin-web/src/environments/environment.prod.ts)
-Configuração de produção (mesma estrutura, `production: true`)
+#### [user-profile.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/user-profile.service.ts)
+**CRUD de perfis:**
+- `getProfile()` - Buscar perfil por ID
+- `getAllProfiles()` - Listar todos os perfis
+- `getProfilesByRole()` - Filtrar por role
+- `getActiveProfiles()` - Apenas perfis ativos
+- `createProfile()` - Criar novo perfil (admin only)
+- `updateProfile()` - Atualizar perfil
+- `activateProfile()` / `deactivateProfile()` - Soft delete
+- `deleteProfile()` - Hard delete (admin only)
 
 ---
 
-## 📚 Documentação
+### 🛡️ Core - Guards
 
-### [SUPABASE_SETUP.md](file:///home/barril/workspace/cs-admin-web/docs/SUPABASE_SETUP.md)
-**Guia completo de configuração** com:
-- Passo a passo para criar projeto no Supabase
-- Como executar os scripts SQL
-- Como obter credenciais
-- Como criar usuário admin
-- Verificações de instalação
-- Troubleshooting
+#### [auth.guard.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/guards/auth.guard.ts)
+- Protege rotas que requerem autenticação
+- Redireciona para `/login` se não autenticado
+- Preserva URL de destino em `returnUrl` query param
 
----
-
-## 🔄 Outras Mudanças
-
-### [.gitignore](file:///home/barril/workspace/cs-admin-web/.gitignore)
-Removidas linhas que ignoravam `environment.ts` e `environment.prod.ts` para permitir versionamento (credenciais serão substituídas manualmente)
+#### [role.guard.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/guards/role.guard.ts)
+- Factory function que recebe array de roles permitidos
+- Admin tem acesso a tudo automaticamente
+- Redireciona para `/access-denied` se sem permissão
+- Exemplo: `roleGuard(['admin', 'secretary'])`
 
 ---
 
-## ✅ Verificação
+### 🔌 Core - Interceptors
 
-### Arquivos Criados (12 novos arquivos)
-```
-✓ supabase/migrations/01_schema.sql
-✓ supabase/migrations/02_indexes.sql
-✓ supabase/migrations/03_triggers.sql
-✓ supabase/migrations/04_views.sql
-✓ supabase/migrations/05_rls.sql
-✓ supabase/migrations/06_seed.sql
-✓ supabase/migrations/README.md
-✓ docs/SUPABASE_SETUP.md
-✓ src/app/core/services/supabase.service.ts
-✓ src/environments/environment.ts
-✓ src/environments/environment.prod.ts
-✓ .gitignore (modificado)
-```
-
-### Contagem de Scripts SQL
-```bash
-$ find supabase -type f -name "*.sql" | wc -l
-6  # ✅ Todos os 6 scripts criados
-```
-
-### Status do Git
-```
-M  .gitignore
-A  docs/SUPABASE_SETUP.md
-A  src/app/core/services/supabase.service.ts
-A  src/environments/environment.prod.ts
-A  src/environments/environment.ts
-A  supabase/migrations/01_schema.sql
-A  supabase/migrations/02_indexes.sql
-A  supabase/migrations/03_triggers.sql
-A  supabase/migrations/04_views.sql
-A  supabase/migrations/05_rls.sql
-A  supabase/migrations/06_seed.sql
-A  supabase/migrations/README.md
-```
+#### [auth.interceptor.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/interceptors/auth.interceptor.ts)
+- Adiciona token JWT em todas as requisições HTTP
+- Trata erros 401 (não autorizado)
+- Redirect automático para login em caso de sessão expirada
 
 ---
 
-## 📋 Próximos Passos (Ação do Usuário)
+### 🎨 Features - Auth Components
 
-### 1. Criar Projeto no Supabase
-- Acessar https://supabase.com/dashboard
-- Criar novo projeto
-- Copiar URL e Anon Key
+#### [LoginComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/login/login.component.ts)
+**Funcionalidades:**
+- Formulário reativo com validações (email, senha mínimo 6 caracteres)
+- Loading state durante autenticação
+- Exibição de mensagens de erro
+- Redirect para `returnUrl` após login bem-sucedido
+- Link para recuperação de senha
 
-### 2. Atualizar Credenciais
-Editar arquivos de ambiente com as credenciais reais:
-- `src/environments/environment.ts`
-- `src/environments/environment.prod.ts`
+**Design:**
+- Gradiente azul/indigo no fundo
+- Card centralizado com shadow
+- Campos com focus ring indigo
+- Botão com loading spinner
+- Responsivo (mobile-first)
 
-### 3. Executar Scripts SQL
-No SQL Editor do Supabase, executar na ordem:
-1. 01_schema.sql
-2. 02_indexes.sql
-3. 03_triggers.sql
-4. 04_views.sql
-5. 05_rls.sql
-6. 06_seed.sql
+#### [ForgotPasswordComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/forgot-password/forgot-password.component.ts)
+- Formulário para solicitar reset de senha
+- Mensagens de sucesso/erro
+- Link para voltar ao login
 
-### 4. Criar Usuário Admin
-- Criar usuário via Supabase Auth
-- Adicionar perfil na tabela `user_profiles`
-
-### 5. Testar Conexão
-```bash
-npm start
-# Verificar console do navegador
-```
+#### [AccessDeniedComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/access-denied/access-denied.component.ts)
+- Página amigável de acesso negado
+- Ícone de alerta
+- Explicação sobre permissões necessárias
+- Botão para voltar ao dashboard
 
 ---
 
-## 🎯 Resumo
+### 🧩 Shared - Components
 
-✅ **Backend completo configurado**:
-- 15 tabelas com relacionamentos
-- Índices de otimização
-- Triggers automáticos
-- 7 views para relatórios
-- RLS com 5 níveis de acesso
-- Dados iniciais (seed)
+#### [HeaderComponent](file:///home/barril/workspace/cs-admin-web/src/app/shared/components/header/header.component.ts)
+**Funcionalidades:**
+- Exibe nome do usuário logado
+- Badge com role (em português)
+- Avatar com iniciais do nome
+- Menu dropdown com:
+  - Link para perfil
+  - Botão de logout
 
-✅ **Frontend integrado**:
-- SupabaseService completo
-- Métodos de autenticação
-- Helpers para queries
-- Configuração de ambiente
+#### [SidebarComponent](file:///home/barril/workspace/cs-admin-web/src/app/shared/components/sidebar/sidebar.component.ts)
+**Menu dinâmico baseado em permissões:**
+- Dashboard (todos)
+- Cadastros (admin, secretary)
+- Financeiro (admin, treasury)
+- Administrativo (admin, secretary, board)
+- Relatórios (todos)
 
-✅ **Documentação completa**:
-- Guia de setup passo a passo
-- README das migrations
-- Comentários nos scripts SQL
+Apenas exibe itens que o usuário tem permissão para acessar.
 
-🔄 **Aguardando ação manual**:
-- Criar projeto no Supabase
-- Executar scripts SQL
-- Configurar credenciais
+---
+
+### 📄 Features - Dashboard
+
+#### [DashboardComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/dashboard/dashboard.component.ts)
+**Layout completo:**
+- Header no topo
+- Sidebar à esquerda
+- Área de conteúdo principal com:
+  - 4 cards de estatísticas (placeholders)
+  - Mensagem de boas-vindas
+
+---
+
+### 🛣️ Routing
+
+#### [app.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/app.routes.ts)
+**Rotas públicas:**
+- `/login` - LoginComponent
+- `/forgot-password` - ForgotPasswordComponent
+- `/access-denied` - AccessDeniedComponent
+
+**Rotas protegidas:**
+- `/dashboard` - Requer autenticação
+- `/cadastros` - Requer admin ou secretary
+- `/financeiro` - Requer admin ou treasury
+- `/administrativo` - Requer admin, secretary ou board
+- `/relatorios` - Requer autenticação
+
+**Lazy loading:**
+Todos os módulos usam lazy loading para otimização.
+
+#### Arquivos de rotas dos módulos:
+- [cadastros.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/cadastros/cadastros.routes.ts)
+- [financeiro.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/financeiro/financeiro.routes.ts)
+- [administrativo.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/administrativo/administrativo.routes.ts)
+- [relatorios.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/relatorios/relatorios.routes.ts)
+
+Criados vazios, prontos para receber rotas dos respectivos módulos.
+
+---
+
+### ⚙️ Configuration
+
+#### [app.config.ts](file:///home/barril/workspace/cs-admin-web/src/app/app.config.ts)
+Adicionado `provideHttpClient` com `authInterceptor`.
+
+---
+
+## ✅ Resumo
+
+**20 arquivos criados/modificados:**
+- 1 model
+- 2 services
+- 2 guards
+- 1 interceptor
+- 3 componentes de autenticação
+- 2 componentes shared
+- 1 dashboard atualizado
+- 2 arquivos de configuração
+- 4 arquivos de rotas de módulos
+- 1 arquivo de rotas principal
+
+**Funcionalidades implementadas:**
+- ✅ Login/logout completo
+- ✅ Controle de acesso baseado em 5 roles
+- ✅ Guards de rota (autenticação + role)
+- ✅ Interceptor HTTP com token JWT
+- ✅ Recuperação de senha
+- ✅ Menu dinâmico baseado em permissões
+- ✅ Layout completo com Header + Sidebar
+- ✅ Página de acesso negado
+- ✅ Lazy loading de módulos
+
+---
+
+## 🧪 Próximos Passos
+
+### 1. Criar Usuário Admin no Supabase
+
+**No Supabase Dashboard:**
+1. Authentication → Users → Add user
+2. Email: `admin@clube.com`
+3. Password: (definir senha segura)
+4. Copiar UUID do usuário criado
+
+**No SQL Editor:**
+```sql
+INSERT INTO public.user_profiles (id, full_name, role, active)
+VALUES ('<UUID_DO_USUARIO>', 'Administrador', 'admin', true);
+```
+
+### 2. Testar Fluxo de Login
+- Acessar `http://localhost:4200/login`
+- Fazer login com credenciais do admin
+- Verificar redirect para dashboard
+- Verificar nome e role no header
+- Verificar menu exibe todas as opções
+
+### 3. Testar Controle de Acesso
+Criar usuários com diferentes roles e testar:
+- Secretary: deve ver Cadastros e Administrativo
+- Treasury: deve ver apenas Financeiro
+- Tentar acessar rotas sem permissão → Ver página de acesso negado
+
+### 4. Testes Pendentes
+- [ ] Testes unitários dos services
+- [ ] Testes dos guards
+- [ ] Testes dos componentes
+- [ ] Teste de recuperação de senha
+
+---
+
+## 📌 Observações
+
+- **Erros de lint**: AuthService tem alguns erros relacionados aos tipos de retorno do SupabaseService. Precisam ser ajustados conforme a implementação real do Supabase.
+- **Registro desabilitado**: O componente de registro não foi criado pois o fluxo é: admin cria usuário no Supabase Auth + adiciona perfil manualmente.
+- **Primeiro acesso**: É necessário criar manualmente o primeiro usuário admin no Supabase.
