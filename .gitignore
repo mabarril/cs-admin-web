@@ -8,8 +8,6 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
-src/environments/environment.ts
-src/environments/environment.prod.ts
 
 # Build
 dist/

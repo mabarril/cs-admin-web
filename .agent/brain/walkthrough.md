@@ -1,84 +1,259 @@
-# Walkthrough: Configuração de Versionamento de Artefatos
+# Walkthrough: Configuração do Supabase
 
 ## Objetivo
-Configurar o repositório para armazenar todos os artefatos gerados pelo agente de IA durante o desenvolvimento, permitindo rastreabilidade completa das decisões técnicas e progresso do projeto.
+Implementar a configuração completa do Supabase como backend do projeto, incluindo scripts SQL, serviços Angular, configuração de ambiente e documentação.
 
 ## Mudanças Implementadas
 
-### Estrutura de Diretórios
-Criada a estrutura `.agent/` no repositório:
+### 📁 Estrutura de Diretórios Criada
 
 ```
-.agent/
-├── README.md                    # Documentação da estrutura
-├── .gitkeep                     # Garante versionamento do diretório
-├── brain/                       # Artefatos do agente
-│   ├── task.md                  # Lista de tarefas
-│   └── *.metadata.json          # Metadados dos artefatos
-└── workflows/                   # Workflows reutilizáveis
-    └── sync-artifacts.md        # Workflow de sincronização
+cs-admin-web/
+├── supabase/
+│   └── migrations/          # Scripts SQL
+├── docs/                    # Documentação
+└── src/
+    ├── environments/        # Configurações de ambiente
+    └── app/core/services/   # Serviços Angular
 ```
 
-### Arquivos Criados
+---
 
-#### [.agent/README.md](file:///home/barril/workspace/cs-admin-web/.agent/README.md)
-Documentação completa explicando:
-- Estrutura de diretórios
-- Propósito de cada seção
-- Como os artefatos são utilizados
+## 🗄️ Scripts SQL (6 arquivos)
 
-#### [.agent/workflows/sync-artifacts.md](file:///home/barril/workspace/cs-admin-web/.agent/workflows/sync-artifacts.md)
-Workflow automatizado para sincronizar artefatos:
-- Copia artefatos de `~/.gemini/antigravity/brain/` para `.agent/brain/`
-- Comandos marcados com `// turbo` para execução automática
-- Pode ser executado com `/sync-artifacts`
+### [01_schema.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/01_schema.sql)
+**15 tabelas criadas** organizadas por módulos:
 
-#### [.agent/brain/task.md](file:///home/barril/workspace/cs-admin-web/.agent/brain/task.md)
-Lista inicial de tarefas do projeto organizadas por:
-- Configuração Inicial
-- Módulos Principais
-- Infraestrutura
+**Autenticação**:
+- `user_profiles` - Perfis de usuários com roles
 
-## Verificação
+**Cadastros Base**:
+- `units` - Unidades do clube
+- `classes` - Classes de desbravadores (com cores)
+- `specialty_types` - Tipos de especialidades (com cores)
+- `specialties` - Especialidades disponíveis
+- `pathfinders` - Cadastro de desbravadores
+- `pathfinder_specialties` - Especialidades conquistadas
 
-### Arquivos Adicionados ao Git
+**Módulo Financeiro**:
+- `monthly_fees` - Controle de mensalidades
+- `transaction_categories` - Categorias de transações
+- `cash_transactions` - Transações de caixa
+- `costs` - Controle de custos/projetos
+
+**Módulo Administrativo**:
+- `assets` - Patrimônio do clube
+- `minutes` - Livro de atas
+- `acts` - Livro de atos
+- `exit_authorizations` - Autorizações de saída
+
+### [02_indexes.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/02_indexes.sql)
+**Índices de otimização** criados:
+- Índices em foreign keys
+- Índices em campos de busca frequente (status, datas)
+- Índices compostos para queries complexas
+
+### [03_triggers.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/03_triggers.sql)
+**Functions e triggers** implementados:
+- `update_updated_at_column()` - Atualiza `updated_at` automaticamente
+- Triggers para todas as tabelas com `updated_at`
+- `update_overdue_monthly_fees()` - Atualiza mensalidades vencidas
+- `calculate_age()` - Calcula idade a partir da data de nascimento
+
+### [04_views.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/04_views.sql)
+**7 views para relatórios**:
+- `vw_cash_flow` - Fluxo de caixa com saldo acumulado
+- `vw_pathfinder_details` - Desbravadores com unidade, classe e especialidades
+- `vw_monthly_fees_summary` - Resumo mensal de mensalidades
+- `vw_pathfinder_specialties` - Especialidades por desbravador
+- `vw_active_assets` - Patrimônio ativo
+- `vw_financial_summary_by_category` - Resumo financeiro por categoria
+- `vw_pathfinders_by_unit` - Estatísticas por unidade
+
+### [05_rls.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/05_rls.sql)
+**Row Level Security** configurado:
+- Functions: `get_user_role()`, `is_admin()`
+- RLS habilitado em todas as 15 tabelas
+- Políticas baseadas em roles:
+  - **admin**: Acesso total
+  - **secretary**: Cadastros e administrativo
+  - **treasury**: Financeiro
+  - **counselor**: Desbravadores e especialidades
+  - **board**: Atas, atos e custos
+
+### [06_seed.sql](file:///home/barril/workspace/cs-admin-web/supabase/migrations/06_seed.sql)
+**Dados iniciais**:
+- 6 classes padrão (Amigo, Companheiro, Pesquisador, etc.) com cores
+- 8 tipos de especialidades com cores
+- 14 categorias de transações financeiras
+
+### [README.md](file:///home/barril/workspace/cs-admin-web/supabase/migrations/README.md)
+Instruções de execução dos scripts SQL
+
+---
+
+## 🔧 Serviços Angular
+
+### [supabase.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/supabase.service.ts)
+**Serviço completo do Supabase** com:
+
+**Autenticação**:
+- `signIn()` - Login com email/senha
+- `signOut()` - Logout
+- `signUp()` - Registro de usuário
+- `resetPassword()` - Reset de senha
+- `updatePassword()` - Atualizar senha
+
+**Observables**:
+- `user$` - Observable do usuário atual
+- `session$` - Observable da sessão
+- `currentUser` - Snapshot do usuário
+- `isAuthenticated` - Verificação de autenticação
+
+**Helpers**:
+- `from()` - Queries SELECT
+- `rpc()` - Remote Procedure Calls
+- `storage` - Acesso ao Storage
+- `client` - Cliente Supabase direto
+
+---
+
+## ⚙️ Configuração de Ambiente
+
+### [environment.ts](file:///home/barril/workspace/cs-admin-web/src/environments/environment.ts)
+Configuração de desenvolvimento:
+```typescript
+{
+  production: false,
+  supabaseUrl: 'YOUR_SUPABASE_URL',
+  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+  appName: 'Sistema de Gerenciamento de Clube de Desbravadores',
+  appVersion: '0.1.0'
+}
 ```
-✓ .agent/.gitkeep
-✓ .agent/README.md
-✓ .agent/brain/task.md
-✓ .agent/brain/task.md.metadata.json
-✓ .agent/brain/task.md.resolved
-✓ .agent/brain/task.md.resolved.0
-✓ .agent/workflows/sync-artifacts.md
+
+### [environment.prod.ts](file:///home/barril/workspace/cs-admin-web/src/environments/environment.prod.ts)
+Configuração de produção (mesma estrutura, `production: true`)
+
+---
+
+## 📚 Documentação
+
+### [SUPABASE_SETUP.md](file:///home/barril/workspace/cs-admin-web/docs/SUPABASE_SETUP.md)
+**Guia completo de configuração** com:
+- Passo a passo para criar projeto no Supabase
+- Como executar os scripts SQL
+- Como obter credenciais
+- Como criar usuário admin
+- Verificações de instalação
+- Troubleshooting
+
+---
+
+## 🔄 Outras Mudanças
+
+### [.gitignore](file:///home/barril/workspace/cs-admin-web/.gitignore)
+Removidas linhas que ignoravam `environment.ts` e `environment.prod.ts` para permitir versionamento (credenciais serão substituídas manualmente)
+
+---
+
+## ✅ Verificação
+
+### Arquivos Criados (12 novos arquivos)
+```
+✓ supabase/migrations/01_schema.sql
+✓ supabase/migrations/02_indexes.sql
+✓ supabase/migrations/03_triggers.sql
+✓ supabase/migrations/04_views.sql
+✓ supabase/migrations/05_rls.sql
+✓ supabase/migrations/06_seed.sql
+✓ supabase/migrations/README.md
+✓ docs/SUPABASE_SETUP.md
+✓ src/app/core/services/supabase.service.ts
+✓ src/environments/environment.ts
+✓ src/environments/environment.prod.ts
+✓ .gitignore (modificado)
 ```
 
-### Como Usar
-
-**Sincronizar artefatos manualmente:**
+### Contagem de Scripts SQL
 ```bash
-/sync-artifacts
+$ find supabase -type f -name "*.sql" | wc -l
+6  # ✅ Todos os 6 scripts criados
 ```
 
-**Ou executar os comandos:**
+### Status do Git
+```
+M  .gitignore
+A  docs/SUPABASE_SETUP.md
+A  src/app/core/services/supabase.service.ts
+A  src/environments/environment.prod.ts
+A  src/environments/environment.ts
+A  supabase/migrations/01_schema.sql
+A  supabase/migrations/02_indexes.sql
+A  supabase/migrations/03_triggers.sql
+A  supabase/migrations/04_views.sql
+A  supabase/migrations/05_rls.sql
+A  supabase/migrations/06_seed.sql
+A  supabase/migrations/README.md
+```
+
+---
+
+## 📋 Próximos Passos (Ação do Usuário)
+
+### 1. Criar Projeto no Supabase
+- Acessar https://supabase.com/dashboard
+- Criar novo projeto
+- Copiar URL e Anon Key
+
+### 2. Atualizar Credenciais
+Editar arquivos de ambiente com as credenciais reais:
+- `src/environments/environment.ts`
+- `src/environments/environment.prod.ts`
+
+### 3. Executar Scripts SQL
+No SQL Editor do Supabase, executar na ordem:
+1. 01_schema.sql
+2. 02_indexes.sql
+3. 03_triggers.sql
+4. 04_views.sql
+5. 05_rls.sql
+6. 06_seed.sql
+
+### 4. Criar Usuário Admin
+- Criar usuário via Supabase Auth
+- Adicionar perfil na tabela `user_profiles`
+
+### 5. Testar Conexão
 ```bash
-cp -r ~/.gemini/antigravity/brain/5bf5b450-159f-4f40-abb7-9a519076a4dc/* .agent/brain/
-git add .agent/
-git commit -m "docs: atualizar artefatos do agente"
+npm start
+# Verificar console do navegador
 ```
 
-## Benefícios
+---
 
-✅ **Rastreabilidade**: Histórico completo de decisões técnicas  
-✅ **Colaboração**: Novos desenvolvedores entendem o contexto  
-✅ **Continuidade**: Agente mantém contexto entre conversas  
-✅ **Documentação**: Sempre atualizada e versionada  
-✅ **Transparência**: Todas as mudanças visíveis no Git
+## 🎯 Resumo
 
-## Próximos Passos
+✅ **Backend completo configurado**:
+- 15 tabelas com relacionamentos
+- Índices de otimização
+- Triggers automáticos
+- 7 views para relatórios
+- RLS com 5 níveis de acesso
+- Dados iniciais (seed)
 
-Os artefatos estão prontos para commit. Você pode:
-1. Revisar os arquivos adicionados
-2. Fazer commit das mudanças
-3. Continuar o desenvolvimento normalmente
+✅ **Frontend integrado**:
+- SupabaseService completo
+- Métodos de autenticação
+- Helpers para queries
+- Configuração de ambiente
 
-Todos os futuros artefatos serão automaticamente sincronizados usando o workflow `/sync-artifacts`.
+✅ **Documentação completa**:
+- Guia de setup passo a passo
+- README das migrations
+- Comentários nos scripts SQL
+
+🔄 **Aguardando ação manual**:
+- Criar projeto no Supabase
+- Executar scripts SQL
+- Configurar credenciais

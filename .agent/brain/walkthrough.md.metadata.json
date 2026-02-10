@@ -1,5 +1,6 @@
 {
   "artifactType": "ARTIFACT_TYPE_WALKTHROUGH",
-  "summary": "Documenta a configuração do sistema de versionamento de artefatos do agente no repositório Git. Inclui estrutura criada, arquivos adicionados e workflow de sincronização.",
-  "updatedAt": "2026-02-10T00:09:52.773331818Z"
+  "summary": "Documenta a implementação completa da configuração do Supabase, incluindo 6 scripts SQL, SupabaseService, arquivos de ambiente, guia de setup e verificação de arquivos criados.",
+  "updatedAt": "2026-02-10T00:25:06.948557232Z",
+  "version": "1"
 }

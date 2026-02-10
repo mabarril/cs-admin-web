@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "Plano detalhado para configurar o Supabase no projeto, incluindo criação do projeto, execução do schema do banco de dados, configuração de RLS, triggers, views, integração com Angular e criação de serviços base. Inclui scripts SQL organizados e plano de verificação.",
+  "updatedAt": "2026-02-10T00:15:18.890107135Z"
+}
