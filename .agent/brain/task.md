@@ -17,7 +17,22 @@
 - [ ] Configuração do Tailwind CSS
 
 ## Módulos Principais
-- [ ] Sistema de Autenticação
+
+### Fase 3: Módulo de Autenticação
+- [x] Feature branch criada (feature/auth-module)
+- [x] Plano de implementação do módulo de autenticação
+- [ ] Criar models e interfaces (UserProfile, UserRole)
+- [ ] Implementar AuthService e UserProfileService
+- [ ] Criar guards (AuthGuard, RoleGuard)
+- [ ] Criar interceptor de autenticação
+- [ ] Implementar componentes (Login, Register, ForgotPassword, AccessDenied)
+- [ ] Criar Header e Sidebar com controle de acesso
+- [ ] Configurar rotas com guards
+- [ ] Testes unitários
+- [ ] Testes manuais de fluxo completo
+- [ ] Merge para develop
+
+### Próximas Fases
 - [ ] Gestão de Membros
 - [ ] Gestão Financeira
 - [ ] Gestão Administrativa
