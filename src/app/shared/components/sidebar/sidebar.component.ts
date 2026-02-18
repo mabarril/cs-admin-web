@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -49,31 +49,20 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <aside class="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
-      <!-- App Logo -->
-      <div class="p-6 border-b border-gray-700">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</p>
+    <aside class="w-64 bg-gray-900 text-white h-full flex flex-col">
+      <div class="px-6 py-4 border-b border-gray-700">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Navegação</p>
       </div>
-
-      <!-- Navigation -->
-      <nav class="flex-1 p-4 space-y-1">
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
         @for (item of visibleMenuItems(); track item.route) {
           <a
             [routerLink]="item.route"
             routerLinkActive="bg-indigo-600 text-white"
             [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
             class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors duration-150"
+            (click)="linkClicked.emit()"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-5 h-5 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path [attr.d]="item.svgPath"/>
             </svg>
             <span class="text-sm font-medium">{{ item.label }}</span>
@@ -87,10 +76,10 @@ const ALL_MENU_ITEMS: MenuItem[] = [
 export class SidebarComponent {
   private authService = inject(AuthService);
 
-  /** Computed signal: filtra os itens do menu com base no role do usuário */
+  /** Emitido quando um link é clicado (para fechar sidebar no mobile) */
+  readonly linkClicked = output<void>();
+
   readonly visibleMenuItems = computed(() =>
-    ALL_MENU_ITEMS.filter(item =>
-      this.authService.hasAnyRole(item.allowedRoles)
-    )
+    ALL_MENU_ITEMS.filter(item => this.authService.hasAnyRole(item.allowedRoles))
   );
 }
