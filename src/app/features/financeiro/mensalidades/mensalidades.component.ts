@@ -2,13 +2,15 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MensalidadeService } from '../services/mensalidade.service';
+import { DesbravadorService } from '../../cadastros/services/desbravador.service';
 import { Mensalidade, MensalidadeForm, StatusMensalidade, MESES, STATUS_MENSALIDADE_LABELS } from '../../../core/models/financeiro.model';
+import { Desbravador } from '../../../core/models/cadastros.model';
 
 @Component({
-    selector: 'app-mensalidades',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
-    template: `
+  selector: 'app-mensalidades',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  template: `
     <div class="p-6 space-y-6">
 
       <!-- Header -->
@@ -151,10 +153,32 @@ import { Mensalidade, MensalidadeForm, StatusMensalidade, MESES, STATUS_MENSALID
             </button>
           </div>
           <form [formGroup]="form" (ngSubmit)="salvar()" class="p-6 space-y-4">
+
+            <!-- Seleção de desbravador por nome -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ID do Desbravador <span class="text-red-500">*</span></label>
-              <input formControlName="desbravador_id" type="text" placeholder="UUID do desbravador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Desbravador <span class="text-red-500">*</span>
+              </label>
+              @if (carregandoDesbravadores()) {
+                <div class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-400 bg-gray-50">
+                  Carregando desbravadores...
+                </div>
+              } @else {
+                <select
+                  formControlName="desbravador_id"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="">Selecione um desbravador...</option>
+                  @for (d of desbravadores(); track d.id) {
+                    <option [value]="d.id">{{ d.full_name }}{{ d.unit?.name ? ' — ' + d.unit!.name : '' }}</option>
+                  }
+                </select>
+                @if (desbravadores().length === 0) {
+                  <p class="text-xs text-amber-600 mt-1">Nenhum desbravador ativo encontrado. Cadastre desbravadores primeiro.</p>
+                }
+              }
             </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Mês <span class="text-red-500">*</span></label>
@@ -228,127 +252,142 @@ import { Mensalidade, MensalidadeForm, StatusMensalidade, MESES, STATUS_MENSALID
   `
 })
 export class MensalidadesComponent implements OnInit {
-    private service = inject(MensalidadeService);
-    private fb = inject(FormBuilder);
+  private service = inject(MensalidadeService);
+  private desbravadorService = inject(DesbravadorService);
+  private fb = inject(FormBuilder);
 
-    readonly mensalidades = signal<Mensalidade[]>([]);
-    readonly loading = signal(true);
-    readonly modalAberto = signal(false);
-    readonly salvando = signal(false);
-    readonly erro = signal<string | null>(null);
-    readonly editando = signal<Mensalidade | null>(null);
-    readonly paraExcluir = signal<Mensalidade | null>(null);
+  readonly mensalidades = signal<Mensalidade[]>([]);
+  readonly desbravadores = signal<Desbravador[]>([]);
+  readonly loading = signal(true);
+  readonly carregandoDesbravadores = signal(false);
+  readonly modalAberto = signal(false);
+  readonly salvando = signal(false);
+  readonly erro = signal<string | null>(null);
+  readonly editando = signal<Mensalidade | null>(null);
+  readonly paraExcluir = signal<Mensalidade | null>(null);
 
-    readonly filtroMes = signal(new Date().getMonth() + 1);
-    readonly filtroAno = signal(new Date().getFullYear());
-    readonly filtroStatus = signal<string>('');
+  readonly filtroMes = signal(new Date().getMonth() + 1);
+  readonly filtroAno = signal(new Date().getFullYear());
+  readonly filtroStatus = signal<string>('');
 
-    readonly totalPagos = computed(() => this.mensalidades().filter(m => m.status === 'pago').length);
-    readonly totalPendentes = computed(() => this.mensalidades().filter(m => m.status === 'pendente').length);
-    readonly totalAtrasados = computed(() => this.mensalidades().filter(m => m.status === 'atrasado').length);
+  readonly totalPagos = computed(() => this.mensalidades().filter(m => m.status === 'pago').length);
+  readonly totalPendentes = computed(() => this.mensalidades().filter(m => m.status === 'pendente').length);
+  readonly totalAtrasados = computed(() => this.mensalidades().filter(m => m.status === 'atrasado').length);
 
-    readonly meses = MESES;
-    readonly anos = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  readonly meses = MESES;
+  readonly anos = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
-    form = this.fb.group({
-        desbravador_id: ['', Validators.required],
-        mes: [new Date().getMonth() + 1, Validators.required],
-        ano: [new Date().getFullYear(), Validators.required],
-        valor: [0, [Validators.required, Validators.min(0.01)]],
-        status: ['pendente' as StatusMensalidade],
-        data_pagamento: [''],
-        observacao: ['']
+  form = this.fb.group({
+    desbravador_id: ['', Validators.required],
+    mes: [new Date().getMonth() + 1, Validators.required],
+    ano: [new Date().getFullYear(), Validators.required],
+    valor: [0, [Validators.required, Validators.min(0.01)]],
+    status: ['pendente' as StatusMensalidade],
+    data_pagamento: [''],
+    observacao: ['']
+  });
+
+  ngOnInit(): void {
+    this.carregar();
+    this.carregarDesbravadores();
+  }
+
+  carregar(): void {
+    this.loading.set(true);
+    const filtros = {
+      mes: this.filtroMes() || undefined,
+      ano: this.filtroAno() || undefined,
+      status: (this.filtroStatus() as StatusMensalidade) || undefined
+    };
+    this.service.listar(filtros).subscribe(data => {
+      this.mensalidades.set(data);
+      this.loading.set(false);
     });
+  }
 
-    ngOnInit(): void { this.carregar(); }
+  carregarDesbravadores(): void {
+    this.carregandoDesbravadores.set(true);
+    this.desbravadorService.listar().subscribe(data => {
+      // Ordena por nome para facilitar a busca
+      this.desbravadores.set(data.sort((a, b) => a.full_name.localeCompare(b.full_name)));
+      this.carregandoDesbravadores.set(false);
+    });
+  }
 
-    carregar(): void {
-        this.loading.set(true);
-        const filtros = {
-            mes: this.filtroMes() || undefined,
-            ano: this.filtroAno() || undefined,
-            status: (this.filtroStatus() as StatusMensalidade) || undefined
-        };
-        this.service.listar(filtros).subscribe(data => {
-            this.mensalidades.set(data);
-            this.loading.set(false);
-        });
-    }
+  aplicarFiltros(): void { this.carregar(); }
 
-    aplicarFiltros(): void { this.carregar(); }
+  abrirFormulario(m?: Mensalidade): void {
+    this.editando.set(m ?? null);
+    this.erro.set(null);
+    this.form.reset({
+      desbravador_id: m?.desbravador_id ?? '',
+      mes: m?.mes ?? new Date().getMonth() + 1,
+      ano: m?.ano ?? new Date().getFullYear(),
+      valor: m?.valor ?? 0,
+      status: m?.status ?? 'pendente',
+      data_pagamento: m?.data_pagamento ?? '',
+      observacao: m?.observacao ?? ''
+    });
+    this.modalAberto.set(true);
+  }
 
-    abrirFormulario(m?: Mensalidade): void {
-        this.editando.set(m ?? null);
-        this.erro.set(null);
-        this.form.reset({
-            desbravador_id: m?.desbravador_id ?? '',
-            mes: m?.mes ?? new Date().getMonth() + 1,
-            ano: m?.ano ?? new Date().getFullYear(),
-            valor: m?.valor ?? 0,
-            status: m?.status ?? 'pendente',
-            data_pagamento: m?.data_pagamento ?? '',
-            observacao: m?.observacao ?? ''
-        });
-        this.modalAberto.set(true);
-    }
+  fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
 
-    fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
+  salvar(): void {
+    if (this.form.invalid) return;
+    this.salvando.set(true);
+    this.erro.set(null);
+    const raw = this.form.value;
+    const formValue: MensalidadeForm = {
+      desbravador_id: raw.desbravador_id!,
+      mes: raw.mes!,
+      ano: raw.ano!,
+      valor: raw.valor!,
+      status: raw.status as StatusMensalidade,
+      data_pagamento: raw.data_pagamento || undefined,
+      observacao: raw.observacao || undefined
+    };
+    const editando = this.editando();
+    const obs = editando
+      ? this.service.atualizar(editando.id, formValue)
+      : this.service.criar(formValue);
+    obs.subscribe(result => {
+      this.salvando.set(false);
+      if (result) { this.fecharFormulario(); this.carregar(); }
+      else this.erro.set('Erro ao salvar. Tente novamente.');
+    });
+  }
 
-    salvar(): void {
-        if (this.form.invalid) return;
-        this.salvando.set(true);
-        this.erro.set(null);
-        const raw = this.form.value;
-        const formValue: MensalidadeForm = {
-            desbravador_id: raw.desbravador_id!,
-            mes: raw.mes!,
-            ano: raw.ano!,
-            valor: raw.valor!,
-            status: raw.status as StatusMensalidade,
-            data_pagamento: raw.data_pagamento || undefined,
-            observacao: raw.observacao || undefined
-        };
-        const editando = this.editando();
-        const obs = editando
-            ? this.service.atualizar(editando.id, formValue)
-            : this.service.criar(formValue);
-        obs.subscribe(result => {
-            this.salvando.set(false);
-            if (result) { this.fecharFormulario(); this.carregar(); }
-            else this.erro.set('Erro ao salvar. Tente novamente.');
-        });
-    }
+  marcarPago(m: Mensalidade): void {
+    this.service.marcarPago(m.id).subscribe(result => {
+      if (result) this.carregar();
+    });
+  }
 
-    marcarPago(m: Mensalidade): void {
-        this.service.marcarPago(m.id).subscribe(result => {
-            if (result) this.carregar();
-        });
-    }
+  confirmarExclusao(m: Mensalidade): void { this.paraExcluir.set(m); }
 
-    confirmarExclusao(m: Mensalidade): void { this.paraExcluir.set(m); }
+  excluir(): void {
+    const m = this.paraExcluir();
+    if (!m) return;
+    this.service.excluir(m.id).subscribe(ok => {
+      this.paraExcluir.set(null);
+      if (ok) this.carregar();
+    });
+  }
 
-    excluir(): void {
-        const m = this.paraExcluir();
-        if (!m) return;
-        this.service.excluir(m.id).subscribe(ok => {
-            this.paraExcluir.set(null);
-            if (ok) this.carregar();
-        });
-    }
+  nomeMes(mes: number): string {
+    return MESES.find(m => m.value === mes)?.label ?? String(mes);
+  }
 
-    nomeMes(mes: number): string {
-        return MESES.find(m => m.value === mes)?.label ?? String(mes);
-    }
+  statusLabel(status: StatusMensalidade): string {
+    return STATUS_MENSALIDADE_LABELS[status] ?? status;
+  }
 
-    statusLabel(status: StatusMensalidade): string {
-        return STATUS_MENSALIDADE_LABELS[status] ?? status;
-    }
-
-    statusClass(status: StatusMensalidade): string {
-        return {
-            pago: 'bg-green-100 text-green-700',
-            pendente: 'bg-yellow-100 text-yellow-700',
-            atrasado: 'bg-red-100 text-red-700'
-        }[status] ?? 'bg-gray-100 text-gray-700';
-    }
+  statusClass(status: StatusMensalidade): string {
+    return {
+      pago: 'bg-green-100 text-green-700',
+      pendente: 'bg-yellow-100 text-yellow-700',
+      atrasado: 'bg-red-100 text-red-700'
+    }[status] ?? 'bg-gray-100 text-gray-700';
+  }
 }
