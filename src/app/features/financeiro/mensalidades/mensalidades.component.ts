@@ -3,7 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MensalidadeService } from '../services/mensalidade.service';
 import { DesbravadorService } from '../../cadastros/services/desbravador.service';
-import { Mensalidade, MensalidadeForm, StatusMensalidade, MESES, STATUS_MENSALIDADE_LABELS } from '../../../core/models/financeiro.model';
+import {
+  Mensalidade, MensalidadeForm, StatusMensalidade,
+  MESES, STATUS_MENSALIDADE_LABELS, STATUS_MENSALIDADE_CLASS,
+  toReferenceMonth, fromReferenceMonth
+} from '../../../core/models/financeiro.model';
 import { Desbravador } from '../../../core/models/cadastros.model';
 
 @Component({
@@ -48,9 +52,10 @@ import { Desbravador } from '../../../core/models/cadastros.model';
           <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
           <select [value]="filtroStatus()" (change)="filtroStatus.set($any($event.target).value)" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">Todos</option>
-            <option value="pendente">Pendente</option>
-            <option value="pago">Pago</option>
-            <option value="atrasado">Atrasado</option>
+            <option value="pending">Pendente</option>
+            <option value="paid">Pago</option>
+            <option value="overdue">Atrasado</option>
+            <option value="cancelled">Cancelado</option>
           </select>
         </div>
         <button (click)="aplicarFiltros()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
@@ -74,21 +79,18 @@ import { Desbravador } from '../../../core/models/cadastros.model';
         </div>
       </div>
 
-      <!-- Loading -->
       @if (loading()) {
         <div class="flex justify-center py-12">
           <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
       }
 
-      <!-- Empty -->
       @if (!loading() && mensalidades().length === 0) {
         <div class="text-center py-16 bg-white rounded-xl border border-gray-200">
           <p class="text-gray-500 font-medium">Nenhum lançamento encontrado</p>
         </div>
       }
 
-      <!-- Table -->
       @if (!loading() && mensalidades().length > 0) {
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table class="w-full text-sm">
@@ -97,8 +99,8 @@ import { Desbravador } from '../../../core/models/cadastros.model';
                 <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Desbravador</th>
                 <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Competência</th>
                 <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Valor</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vencimento</th>
                 <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagamento</th>
                 <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
@@ -106,30 +108,30 @@ import { Desbravador } from '../../../core/models/cadastros.model';
               @for (m of mensalidades(); track m.id) {
                 <tr class="hover:bg-gray-50 transition-colors">
                   <td class="px-6 py-4">
-                    <p class="font-medium text-gray-900">{{ m.desbravador?.full_name || '—' }}</p>
-                    @if (m.desbravador?.unit?.name) {
-                      <p class="text-xs text-gray-400">{{ m.desbravador!.unit!.name }}</p>
+                    <p class="font-medium text-gray-900">{{ m.pathfinder?.full_name || '—' }}</p>
+                    @if (m.pathfinder?.unit?.name) {
+                      <p class="text-xs text-gray-400">{{ m.pathfinder!.unit!.name }}</p>
                     }
                   </td>
-                  <td class="px-6 py-4 text-gray-600">{{ nomeMes(m.mes) }}/{{ m.ano }}</td>
-                  <td class="px-6 py-4 font-medium text-gray-900">{{ m.valor | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-gray-600">{{ formatarCompetencia(m.reference_month) }}</td>
+                  <td class="px-6 py-4 font-medium text-gray-900">{{ m.amount | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-gray-500 text-xs">{{ m.due_date | date:'dd/MM/yyyy' }}</td>
                   <td class="px-6 py-4">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" [ngClass]="statusClass(m.status)">
                       {{ statusLabel(m.status) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-gray-500 text-xs">{{ m.data_pagamento ? (m.data_pagamento | date:'dd/MM/yyyy') : '—' }}</td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-2">
-                      @if (m.status !== 'pago') {
-                        <button (click)="marcarPago(m)" class="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors" title="Marcar como Pago">
+                      @if (m.status !== 'paid') {
+                        <button (click)="marcarPago(m)" class="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
                           ✓ Pago
                         </button>
                       }
-                      <button (click)="abrirFormulario(m)" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
+                      <button (click)="abrirFormulario(m)" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                       </button>
-                      <button (click)="confirmarExclusao(m)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                      <button (click)="confirmarExclusao(m)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg>
                       </button>
                     </div>
@@ -154,31 +156,25 @@ import { Desbravador } from '../../../core/models/cadastros.model';
           </div>
           <form [formGroup]="form" (ngSubmit)="salvar()" class="p-6 space-y-4">
 
-            <!-- Seleção de desbravador por nome -->
+            <!-- Desbravador -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Desbravador <span class="text-red-500">*</span>
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Desbravador <span class="text-red-500">*</span></label>
               @if (carregandoDesbravadores()) {
-                <div class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-400 bg-gray-50">
-                  Carregando desbravadores...
-                </div>
+                <div class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-400 bg-gray-50">Carregando...</div>
               } @else {
-                <select
-                  formControlName="desbravador_id"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                >
+                <select formControlName="pathfinder_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
                   <option value="">Selecione um desbravador...</option>
                   @for (d of desbravadores(); track d.id) {
                     <option [value]="d.id">{{ d.full_name }}{{ d.unit?.name ? ' — ' + d.unit!.name : '' }}</option>
                   }
                 </select>
                 @if (desbravadores().length === 0) {
-                  <p class="text-xs text-amber-600 mt-1">Nenhum desbravador ativo encontrado. Cadastre desbravadores primeiro.</p>
+                  <p class="text-xs text-amber-600 mt-1">Nenhum desbravador encontrado. Cadastre desbravadores primeiro.</p>
                 }
               }
             </div>
 
+            <!-- Mês/Ano -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Mês <span class="text-red-500">*</span></label>
@@ -190,31 +186,44 @@ import { Desbravador } from '../../../core/models/cadastros.model';
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Ano <span class="text-red-500">*</span></label>
-                <input formControlName="ano" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input formControlName="ano" type="number" min="2000" max="2099" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
+
+            <!-- Valor e Vencimento -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$) <span class="text-red-500">*</span></label>
-                <input formControlName="valor" type="number" step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input formControlName="amount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Vencimento <span class="text-red-500">*</span></label>
+                <input formControlName="due_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+
+            <!-- Status e Pgto -->
+            <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select formControlName="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="pendente">Pendente</option>
-                  <option value="pago">Pago</option>
-                  <option value="atrasado">Atrasado</option>
+                  <option value="pending">Pendente</option>
+                  <option value="paid">Pago</option>
+                  <option value="overdue">Atrasado</option>
+                  <option value="cancelled">Cancelado</option>
                 </select>
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Data do Pagamento</label>
+                <input formControlName="payment_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Data de Pagamento</label>
-              <input formControlName="data_pagamento" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
-              <textarea formControlName="observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+              <textarea formControlName="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
             </div>
+
             @if (erro()) {
               <p class="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{{ erro() }}</p>
             }
@@ -270,21 +279,23 @@ export class MensalidadesComponent implements OnInit {
   readonly filtroAno = signal(new Date().getFullYear());
   readonly filtroStatus = signal<string>('');
 
-  readonly totalPagos = computed(() => this.mensalidades().filter(m => m.status === 'pago').length);
-  readonly totalPendentes = computed(() => this.mensalidades().filter(m => m.status === 'pendente').length);
-  readonly totalAtrasados = computed(() => this.mensalidades().filter(m => m.status === 'atrasado').length);
+  readonly totalPagos = computed(() => this.mensalidades().filter(m => m.status === 'paid').length);
+  readonly totalPendentes = computed(() => this.mensalidades().filter(m => m.status === 'pending').length);
+  readonly totalAtrasados = computed(() => this.mensalidades().filter(m => m.status === 'overdue').length);
 
   readonly meses = MESES;
   readonly anos = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
+  // O form usa campos auxiliares mes/ano que serão convertidos para reference_month ao salvar
   form = this.fb.group({
-    desbravador_id: ['', Validators.required],
+    pathfinder_id: ['', Validators.required],
     mes: [new Date().getMonth() + 1, Validators.required],
     ano: [new Date().getFullYear(), Validators.required],
-    valor: [0, [Validators.required, Validators.min(0.01)]],
-    status: ['pendente' as StatusMensalidade],
-    data_pagamento: [''],
-    observacao: ['']
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    due_date: ['', Validators.required],
+    status: ['pending' as StatusMensalidade],
+    payment_date: [''],
+    notes: ['']
   });
 
   ngOnInit(): void {
@@ -294,12 +305,11 @@ export class MensalidadesComponent implements OnInit {
 
   carregar(): void {
     this.loading.set(true);
-    const filtros = {
+    this.service.listar({
       mes: this.filtroMes() || undefined,
       ano: this.filtroAno() || undefined,
       status: (this.filtroStatus() as StatusMensalidade) || undefined
-    };
-    this.service.listar(filtros).subscribe(data => {
+    }).subscribe(data => {
       this.mensalidades.set(data);
       this.loading.set(false);
     });
@@ -308,7 +318,6 @@ export class MensalidadesComponent implements OnInit {
   carregarDesbravadores(): void {
     this.carregandoDesbravadores.set(true);
     this.desbravadorService.listar().subscribe(data => {
-      // Ordena por nome para facilitar a busca
       this.desbravadores.set(data.sort((a, b) => a.full_name.localeCompare(b.full_name)));
       this.carregandoDesbravadores.set(false);
     });
@@ -319,14 +328,16 @@ export class MensalidadesComponent implements OnInit {
   abrirFormulario(m?: Mensalidade): void {
     this.editando.set(m ?? null);
     this.erro.set(null);
+    const { mes, ano } = m ? fromReferenceMonth(m.reference_month) : { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
     this.form.reset({
-      desbravador_id: m?.desbravador_id ?? '',
-      mes: m?.mes ?? new Date().getMonth() + 1,
-      ano: m?.ano ?? new Date().getFullYear(),
-      valor: m?.valor ?? 0,
-      status: m?.status ?? 'pendente',
-      data_pagamento: m?.data_pagamento ?? '',
-      observacao: m?.observacao ?? ''
+      pathfinder_id: m?.pathfinder_id ?? '',
+      mes,
+      ano,
+      amount: m?.amount ?? 0,
+      due_date: m?.due_date ?? '',
+      status: m?.status ?? 'pending',
+      payment_date: m?.payment_date ?? '',
+      notes: m?.notes ?? ''
     });
     this.modalAberto.set(true);
   }
@@ -339,13 +350,13 @@ export class MensalidadesComponent implements OnInit {
     this.erro.set(null);
     const raw = this.form.value;
     const formValue: MensalidadeForm = {
-      desbravador_id: raw.desbravador_id!,
-      mes: raw.mes!,
-      ano: raw.ano!,
-      valor: raw.valor!,
+      pathfinder_id: raw.pathfinder_id!,
+      reference_month: toReferenceMonth(raw.mes!, raw.ano!),
+      amount: raw.amount!,
+      due_date: raw.due_date!,
       status: raw.status as StatusMensalidade,
-      data_pagamento: raw.data_pagamento || undefined,
-      observacao: raw.observacao || undefined
+      payment_date: raw.payment_date || undefined,
+      notes: raw.notes || undefined
     };
     const editando = this.editando();
     const obs = editando
@@ -354,7 +365,7 @@ export class MensalidadesComponent implements OnInit {
     obs.subscribe(result => {
       this.salvando.set(false);
       if (result) { this.fecharFormulario(); this.carregar(); }
-      else this.erro.set('Erro ao salvar. Tente novamente.');
+      else this.erro.set('Erro ao salvar. Verifique os dados e tente novamente.');
     });
   }
 
@@ -375,8 +386,10 @@ export class MensalidadesComponent implements OnInit {
     });
   }
 
-  nomeMes(mes: number): string {
-    return MESES.find(m => m.value === mes)?.label ?? String(mes);
+  formatarCompetencia(referenceMonth: string): string {
+    const { mes, ano } = fromReferenceMonth(referenceMonth);
+    const nomeMes = MESES.find(m => m.value === mes)?.label ?? String(mes);
+    return `${nomeMes}/${ano}`;
   }
 
   statusLabel(status: StatusMensalidade): string {
@@ -384,10 +397,6 @@ export class MensalidadesComponent implements OnInit {
   }
 
   statusClass(status: StatusMensalidade): string {
-    return {
-      pago: 'bg-green-100 text-green-700',
-      pendente: 'bg-yellow-100 text-yellow-700',
-      atrasado: 'bg-red-100 text-red-700'
-    }[status] ?? 'bg-gray-100 text-gray-700';
+    return STATUS_MENSALIDADE_CLASS[status] ?? 'bg-gray-100 text-gray-700';
   }
 }

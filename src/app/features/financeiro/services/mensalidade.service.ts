@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { Mensalidade, MensalidadeForm, StatusMensalidade } from '../../../core/models/financeiro.model';
 
@@ -16,71 +16,84 @@ export class MensalidadeService {
 
     listar(filtros?: FiltroMensalidade): Observable<Mensalidade[]> {
         return from((async () => {
-            let query = (this.supabase as any).client
-                .from('mensalidades')
-                .select('*, desbravador:pathfinders(id, full_name, unit:units(name))')
-                .eq('active', true)
-                .order('ano', { ascending: false })
-                .order('mes', { ascending: false });
+            let query = this.supabase.client
+                .from('monthly_fees')
+                .select('*, pathfinder:pathfinders(id, full_name, unit:units(name))')
+                .order('reference_month', { ascending: false });
 
-            if (filtros?.mes) query = query.eq('mes', filtros.mes);
-            if (filtros?.ano) query = query.eq('ano', filtros.ano);
+            // Filtra por mês/ano via range de datas no reference_month
+            if (filtros?.mes && filtros?.ano) {
+                const mes = String(filtros.mes).padStart(2, '0');
+                const inicio = `${filtros.ano}-${mes}-01`;
+                const fimDate = new Date(filtros.ano, filtros.mes, 0); // último dia do mês
+                const fim = `${filtros.ano}-${mes}-${fimDate.getDate()}`;
+                query = query.gte('reference_month', inicio).lte('reference_month', fim);
+            } else if (filtros?.ano) {
+                query = query
+                    .gte('reference_month', `${filtros.ano}-01-01`)
+                    .lte('reference_month', `${filtros.ano}-12-31`);
+            }
+
             if (filtros?.status) query = query.eq('status', filtros.status);
 
             const { data, error } = await query;
-            if (error) throw error;
+            if (error) {
+                console.error('[MensalidadeService] listar error:', error);
+                throw error;
+            }
             return data as Mensalidade[];
-        })()).pipe(catchError(() => of([])));
+        })()).pipe(catchError(err => { console.error(err); return of([]); }));
     }
 
     criar(form: MensalidadeForm): Observable<Mensalidade | null> {
         return from((async () => {
-            const { data, error } = await (this.supabase as any).client
-                .from('mensalidades')
+            const { data, error } = await this.supabase.client
+                .from('monthly_fees')
                 .insert(form)
-                .select('*, desbravador:pathfinders(id, full_name, unit:units(name))')
+                .select('*, pathfinder:pathfinders(id, full_name, unit:units(name))')
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error('[MensalidadeService] criar error:', error);
+                throw error;
+            }
             return data as Mensalidade;
-        })()).pipe(catchError(() => of(null)));
+        })()).pipe(catchError(err => { console.error(err); return of(null); }));
     }
 
     atualizar(id: string, form: Partial<MensalidadeForm>): Observable<Mensalidade | null> {
         return from((async () => {
-            const { data, error } = await (this.supabase as any).client
-                .from('mensalidades')
+            const { data, error } = await this.supabase.client
+                .from('monthly_fees')
                 .update({ ...form, updated_at: new Date().toISOString() })
                 .eq('id', id)
-                .select('*, desbravador:pathfinders(id, full_name, unit:units(name))')
+                .select('*, pathfinder:pathfinders(id, full_name, unit:units(name))')
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error('[MensalidadeService] atualizar error:', error);
+                throw error;
+            }
             return data as Mensalidade;
-        })()).pipe(catchError(() => of(null)));
+        })()).pipe(catchError(err => { console.error(err); return of(null); }));
     }
 
     marcarPago(id: string): Observable<Mensalidade | null> {
         return this.atualizar(id, {
-            status: 'pago',
-            data_pagamento: new Date().toISOString().split('T')[0]
+            status: 'paid',
+            payment_date: new Date().toISOString().split('T')[0]
         });
     }
 
     excluir(id: string): Observable<boolean> {
         return from((async () => {
-            const { error } = await (this.supabase as any).client
-                .from('mensalidades')
-                .update({ active: false, updated_at: new Date().toISOString() })
+            const { error } = await this.supabase.client
+                .from('monthly_fees')
+                .delete()
                 .eq('id', id);
-            if (error) throw error;
+            if (error) {
+                console.error('[MensalidadeService] excluir error:', error);
+                throw error;
+            }
             return true;
-        })()).pipe(catchError(() => of(false)));
-    }
-
-    /** Calcula status automaticamente baseado no mês/ano */
-    calcularStatus(mes: number, ano: number): StatusMensalidade {
-        const hoje = new Date();
-        const vencimento = new Date(ano, mes - 1, 10); // dia 10 de cada mês
-        if (vencimento < hoje) return 'atrasado';
-        return 'pendente';
+        })()).pipe(catchError(err => { console.error(err); return of(false); }));
     }
 }

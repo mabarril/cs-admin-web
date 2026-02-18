@@ -5,13 +5,12 @@ import { CaixaService } from '../services/caixa.service';
 import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_LABELS } from '../../../core/models/financeiro.model';
 
 @Component({
-    selector: 'app-caixa',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
-    template: `
+  selector: 'app-caixa',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  template: `
     <div class="p-6 space-y-6">
 
-      <!-- Header -->
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 class="text-2xl font-bold text-gray-900">Caixa</h2>
@@ -23,7 +22,7 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
         </button>
       </div>
 
-      <!-- Saldo cards -->
+      <!-- Cards saldo -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-green-50 border border-green-200 rounded-xl p-5">
           <p class="text-xs font-semibold text-green-600 uppercase tracking-wider">Total Entradas</p>
@@ -45,8 +44,8 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
           <label class="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
           <select [value]="filtroTipo()" (change)="filtroTipo.set($any($event.target).value)" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">Todos</option>
-            <option value="entrada">Entradas</option>
-            <option value="saida">Saídas</option>
+            <option value="income">Entradas</option>
+            <option value="expense">Saídas</option>
           </select>
         </div>
         <div>
@@ -61,9 +60,7 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
       </div>
 
       @if (loading()) {
-        <div class="flex justify-center py-12">
-          <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <div class="flex justify-center py-12"><div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
       }
 
       @if (!loading() && lancamentos().length === 0) {
@@ -88,16 +85,16 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
             <tbody class="divide-y divide-gray-100">
               @for (l of lancamentos(); track l.id) {
                 <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 text-gray-600 text-xs">{{ l.data | date:'dd/MM/yyyy' }}</td>
-                  <td class="px-6 py-4 font-medium text-gray-900">{{ l.descricao }}</td>
-                  <td class="px-6 py-4 text-gray-500">{{ l.categoria || '—' }}</td>
+                  <td class="px-6 py-4 text-gray-600 text-xs">{{ l.transaction_date | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-6 py-4 font-medium text-gray-900">{{ l.description }}</td>
+                  <td class="px-6 py-4 text-gray-500">{{ l.category?.name || '—' }}</td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" [ngClass]="l.tipo === 'entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                      {{ l.tipo === 'entrada' ? '↑' : '↓' }} {{ tipoLabel(l.tipo) }}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" [ngClass]="l.type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                      {{ l.type === 'income' ? '↑' : '↓' }} {{ tipoLabel(l.type) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-right font-semibold" [ngClass]="l.tipo === 'entrada' ? 'text-green-700' : 'text-red-700'">
-                    {{ (l.tipo === 'entrada' ? '+' : '-') }}{{ l.valor | currency:'BRL' }}
+                  <td class="px-6 py-4 text-right font-semibold" [ngClass]="l.type === 'income' ? 'text-green-700' : 'text-red-700'">
+                    {{ (l.type === 'income' ? '+' : '-') }}{{ l.amount | currency:'BRL' }}
                   </td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-2">
@@ -117,7 +114,6 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
       }
     </div>
 
-    <!-- Modal Form -->
     @if (modalAberto()) {
       <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="fecharFormulario()">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
@@ -131,33 +127,33 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo <span class="text-red-500">*</span></label>
-                <select formControlName="tipo" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="entrada">Entrada</option>
-                  <option value="saida">Saída</option>
+                <select formControlName="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="income">Entrada</option>
+                  <option value="expense">Saída</option>
                 </select>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data <span class="text-red-500">*</span></label>
-                <input formControlName="data" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input formControlName="transaction_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
-              <input formControlName="descricao" type="text" placeholder="Ex: Mensalidade de João" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input formControlName="description" type="text" placeholder="Ex: Mensalidade de João" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$) <span class="text-red-500">*</span></label>
-                <input formControlName="valor" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input formControlName="amount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                <input formControlName="categoria" type="text" placeholder="Ex: Mensalidade" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label class="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+                <input formControlName="payment_method" type="text" placeholder="Ex: PIX" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Referência</label>
-              <input formControlName="referencia" type="text" placeholder="Ex: Nota fiscal 001" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+              <input formControlName="notes" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             @if (erro()) {
               <p class="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{{ erro() }}</p>
@@ -182,7 +178,7 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
             </div>
             <div>
               <h3 class="font-semibold text-gray-900">Excluir Lançamento</h3>
-              <p class="text-sm text-gray-500">Tem certeza que deseja excluir <strong>{{ paraExcluir()!.descricao }}</strong>?</p>
+              <p class="text-sm text-gray-500">Tem certeza que deseja excluir <strong>{{ paraExcluir()!.description }}</strong>?</p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -195,106 +191,102 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
   `
 })
 export class CaixaComponent implements OnInit {
-    private service = inject(CaixaService);
-    private fb = inject(FormBuilder);
+  private service = inject(CaixaService);
+  private fb = inject(FormBuilder);
 
-    readonly lancamentos = signal<LancamentoCaixa[]>([]);
-    readonly loading = signal(true);
-    readonly modalAberto = signal(false);
-    readonly salvando = signal(false);
-    readonly erro = signal<string | null>(null);
-    readonly editando = signal<LancamentoCaixa | null>(null);
-    readonly paraExcluir = signal<LancamentoCaixa | null>(null);
+  readonly lancamentos = signal<LancamentoCaixa[]>([]);
+  readonly loading = signal(true);
+  readonly modalAberto = signal(false);
+  readonly salvando = signal(false);
+  readonly erro = signal<string | null>(null);
+  readonly editando = signal<LancamentoCaixa | null>(null);
+  readonly paraExcluir = signal<LancamentoCaixa | null>(null);
 
-    readonly filtroTipo = signal<string>('');
-    readonly filtroInicio = signal('');
-    readonly filtroFim = signal('');
+  readonly filtroTipo = signal<string>('');
+  readonly filtroInicio = signal('');
+  readonly filtroFim = signal('');
 
-    readonly totalEntradas = computed(() =>
-        this.lancamentos().filter(l => l.tipo === 'entrada').reduce((s, l) => s + l.valor, 0)
-    );
-    readonly totalSaidas = computed(() =>
-        this.lancamentos().filter(l => l.tipo === 'saida').reduce((s, l) => s + l.valor, 0)
-    );
-    readonly saldo = computed(() => this.totalEntradas() - this.totalSaidas());
+  readonly totalEntradas = computed(() => this.lancamentos().filter(l => l.type === 'income').reduce((s, l) => s + l.amount, 0));
+  readonly totalSaidas = computed(() => this.lancamentos().filter(l => l.type === 'expense').reduce((s, l) => s + l.amount, 0));
+  readonly saldo = computed(() => this.totalEntradas() - this.totalSaidas());
 
-    form = this.fb.group({
-        tipo: ['entrada' as TipoLancamento, Validators.required],
-        descricao: ['', Validators.required],
-        valor: [0, [Validators.required, Validators.min(0.01)]],
-        data: [new Date().toISOString().split('T')[0], Validators.required],
-        categoria: [''],
-        referencia: ['']
+  form = this.fb.group({
+    type: ['income' as TipoLancamento, Validators.required],
+    transaction_date: [new Date().toISOString().split('T')[0], Validators.required],
+    description: ['', Validators.required],
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    payment_method: [''],
+    notes: ['']
+  });
+
+  ngOnInit(): void { this.carregar(); }
+
+  carregar(): void {
+    this.loading.set(true);
+    this.service.listar({
+      tipo: (this.filtroTipo() as TipoLancamento) || undefined,
+      dataInicio: this.filtroInicio() || undefined,
+      dataFim: this.filtroFim() || undefined
+    }).subscribe(data => {
+      this.lancamentos.set(data);
+      this.loading.set(false);
     });
+  }
 
-    ngOnInit(): void { this.carregar(); }
+  aplicarFiltros(): void { this.carregar(); }
 
-    carregar(): void {
-        this.loading.set(true);
-        this.service.listar({
-            tipo: (this.filtroTipo() as TipoLancamento) || undefined,
-            dataInicio: this.filtroInicio() || undefined,
-            dataFim: this.filtroFim() || undefined
-        }).subscribe(data => {
-            this.lancamentos.set(data);
-            this.loading.set(false);
-        });
-    }
+  abrirFormulario(l?: LancamentoCaixa): void {
+    this.editando.set(l ?? null);
+    this.erro.set(null);
+    this.form.reset({
+      type: l?.type ?? 'income',
+      transaction_date: l?.transaction_date ?? new Date().toISOString().split('T')[0],
+      description: l?.description ?? '',
+      amount: l?.amount ?? 0,
+      payment_method: l?.payment_method ?? '',
+      notes: l?.notes ?? ''
+    });
+    this.modalAberto.set(true);
+  }
 
-    aplicarFiltros(): void { this.carregar(); }
+  fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
 
-    abrirFormulario(l?: LancamentoCaixa): void {
-        this.editando.set(l ?? null);
-        this.erro.set(null);
-        this.form.reset({
-            tipo: l?.tipo ?? 'entrada',
-            descricao: l?.descricao ?? '',
-            valor: l?.valor ?? 0,
-            data: l?.data ?? new Date().toISOString().split('T')[0],
-            categoria: l?.categoria ?? '',
-            referencia: l?.referencia ?? ''
-        });
-        this.modalAberto.set(true);
-    }
+  salvar(): void {
+    if (this.form.invalid) return;
+    this.salvando.set(true);
+    this.erro.set(null);
+    const raw = this.form.value;
+    const formValue: LancamentoCaixaForm = {
+      type: raw.type as TipoLancamento,
+      transaction_date: raw.transaction_date!,
+      description: raw.description!,
+      amount: raw.amount!,
+      payment_method: raw.payment_method || undefined,
+      notes: raw.notes || undefined
+    };
+    const editando = this.editando();
+    const obs = editando
+      ? this.service.atualizar(editando.id, formValue)
+      : this.service.criar(formValue);
+    obs.subscribe(result => {
+      this.salvando.set(false);
+      if (result) { this.fecharFormulario(); this.carregar(); }
+      else this.erro.set('Erro ao salvar. Tente novamente.');
+    });
+  }
 
-    fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
+  confirmarExclusao(l: LancamentoCaixa): void { this.paraExcluir.set(l); }
 
-    salvar(): void {
-        if (this.form.invalid) return;
-        this.salvando.set(true);
-        this.erro.set(null);
-        const raw = this.form.value;
-        const formValue: LancamentoCaixaForm = {
-            tipo: raw.tipo as TipoLancamento,
-            descricao: raw.descricao!,
-            valor: raw.valor!,
-            data: raw.data!,
-            categoria: raw.categoria || undefined,
-            referencia: raw.referencia || undefined
-        };
-        const editando = this.editando();
-        const obs = editando
-            ? this.service.atualizar(editando.id, formValue)
-            : this.service.criar(formValue);
-        obs.subscribe(result => {
-            this.salvando.set(false);
-            if (result) { this.fecharFormulario(); this.carregar(); }
-            else this.erro.set('Erro ao salvar. Tente novamente.');
-        });
-    }
+  excluir(): void {
+    const l = this.paraExcluir();
+    if (!l) return;
+    this.service.excluir(l.id).subscribe(ok => {
+      this.paraExcluir.set(null);
+      if (ok) this.carregar();
+    });
+  }
 
-    confirmarExclusao(l: LancamentoCaixa): void { this.paraExcluir.set(l); }
-
-    excluir(): void {
-        const l = this.paraExcluir();
-        if (!l) return;
-        this.service.excluir(l.id).subscribe(ok => {
-            this.paraExcluir.set(null);
-            if (ok) this.carregar();
-        });
-    }
-
-    tipoLabel(tipo: TipoLancamento): string {
-        return TIPO_LANCAMENTO_LABELS[tipo] ?? tipo;
-    }
+  tipoLabel(tipo: TipoLancamento): string {
+    return TIPO_LANCAMENTO_LABELS[tipo] ?? tipo;
+  }
 }

@@ -1,20 +1,20 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CustoService } from '../services/custo.service';
-import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../../../core/models/financeiro.model';
+import { Custo, CustoForm, StatusCusto, STATUS_CUSTO_LABELS } from '../../../core/models/financeiro.model';
 
 @Component({
-    selector: 'app-custos',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
-    template: `
+  selector: 'app-custos',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  template: `
     <div class="p-6 space-y-6">
 
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Custos</h2>
-          <p class="text-sm text-gray-500 mt-1">Despesas fixas e variáveis do clube</p>
+          <h2 class="text-2xl font-bold text-gray-900">Custos e Projetos</h2>
+          <p class="text-sm text-gray-500 mt-1">Custos planejados e realizados do clube</p>
         </div>
         <button (click)="abrirFormulario()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -22,26 +22,8 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
         </button>
       </div>
 
-      <!-- Resumo mensal -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white border border-gray-200 rounded-xl p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Custos Mensais</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ totalMensal() | currency:'BRL' }}</p>
-        </div>
-        <div class="bg-white border border-gray-200 rounded-xl p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Custo Anual Estimado</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ totalMensal() * 12 | currency:'BRL' }}</p>
-        </div>
-        <div class="bg-white border border-gray-200 rounded-xl p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total de Itens</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ custos().length }}</p>
-        </div>
-      </div>
-
       @if (loading()) {
-        <div class="flex justify-center py-12">
-          <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <div class="flex justify-center py-12"><div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
       }
 
       @if (!loading() && custos().length === 0) {
@@ -55,11 +37,10 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
           <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome</th>
-                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Categoria</th>
-                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Periodicidade</th>
-                <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Valor</th>
-                <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mensal</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Projeto</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estimado</th>
+                <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Realizado</th>
                 <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
@@ -67,17 +48,16 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
               @for (c of custos(); track c.id) {
                 <tr class="hover:bg-gray-50 transition-colors">
                   <td class="px-6 py-4">
-                    <p class="font-medium text-gray-900">{{ c.nome }}</p>
-                    @if (c.descricao) { <p class="text-xs text-gray-400 mt-0.5">{{ c.descricao }}</p> }
+                    <p class="font-medium text-gray-900">{{ c.project_name }}</p>
+                    @if (c.description) { <p class="text-xs text-gray-400 mt-0.5">{{ c.description }}</p> }
                   </td>
-                  <td class="px-6 py-4 text-gray-500">{{ c.categoria || '—' }}</td>
                   <td class="px-6 py-4">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                      {{ periodicidadeLabel(c.periodicidade) }}
+                      {{ statusLabel(c.status) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-right font-medium text-gray-900">{{ c.valor | currency:'BRL' }}</td>
-                  <td class="px-6 py-4 text-right text-gray-500 text-xs">{{ valorMensal(c) | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-right text-gray-600">{{ c.estimated_amount != null ? (c.estimated_amount | currency:'BRL') : '—' }}</td>
+                  <td class="px-6 py-4 text-right font-medium text-gray-900">{{ c.actual_amount != null ? (c.actual_amount | currency:'BRL') : '—' }}</td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-2">
                       <button (click)="abrirFormulario(c)" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
@@ -107,30 +87,41 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
           </div>
           <form [formGroup]="form" (ngSubmit)="salvar()" class="p-6 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nome <span class="text-red-500">*</span></label>
-              <input formControlName="nome" type="text" placeholder="Ex: Aluguel do salão" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$) <span class="text-red-500">*</span></label>
-                <input formControlName="valor" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Periodicidade <span class="text-red-500">*</span></label>
-                <select formControlName="periodicidade" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="mensal">Mensal</option>
-                  <option value="anual">Anual</option>
-                  <option value="unico">Único</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-              <input formControlName="categoria" type="text" placeholder="Ex: Infraestrutura" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto <span class="text-red-500">*</span></label>
+              <input formControlName="project_name" type="text" placeholder="Ex: Uniforme de Gala 2025" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-              <textarea formControlName="descricao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+              <textarea formControlName="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Valor Estimado</label>
+                <input formControlName="estimated_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Valor Realizado</label>
+                <input formControlName="actual_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select formControlName="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="planned">Planejado</option>
+                <option value="in_progress">Em andamento</option>
+                <option value="completed">Concluído</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Data início</label>
+                <input formControlName="start_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Data fim</label>
+                <input formControlName="end_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
             </div>
             @if (erro()) {
               <p class="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{{ erro() }}</p>
@@ -155,7 +146,7 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
             </div>
             <div>
               <h3 class="font-semibold text-gray-900">Excluir Custo</h3>
-              <p class="text-sm text-gray-500">Tem certeza que deseja excluir <strong>{{ paraExcluir()!.nome }}</strong>?</p>
+              <p class="text-sm text-gray-500">Tem certeza que deseja excluir <strong>{{ paraExcluir()!.project_name }}</strong>?</p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -168,93 +159,91 @@ import { Custo, CustoForm, PeriodicidadeCusto, PERIODICIDADE_LABELS } from '../.
   `
 })
 export class CustosComponent implements OnInit {
-    private service = inject(CustoService);
-    private fb = inject(FormBuilder);
+  private service = inject(CustoService);
+  private fb = inject(FormBuilder);
 
-    readonly custos = signal<Custo[]>([]);
-    readonly loading = signal(true);
-    readonly modalAberto = signal(false);
-    readonly salvando = signal(false);
-    readonly erro = signal<string | null>(null);
-    readonly editando = signal<Custo | null>(null);
-    readonly paraExcluir = signal<Custo | null>(null);
+  readonly custos = signal<Custo[]>([]);
+  readonly loading = signal(true);
+  readonly modalAberto = signal(false);
+  readonly salvando = signal(false);
+  readonly erro = signal<string | null>(null);
+  readonly editando = signal<Custo | null>(null);
+  readonly paraExcluir = signal<Custo | null>(null);
 
-    readonly totalMensal = computed(() => this.service.calcularTotalMensal(this.custos()));
+  form = this.fb.group({
+    project_name: ['', Validators.required],
+    description: [''],
+    estimated_amount: [null as number | null],
+    actual_amount: [null as number | null],
+    status: ['planned' as StatusCusto, Validators.required],
+    start_date: [''],
+    end_date: ['']
+  });
 
-    form = this.fb.group({
-        nome: ['', Validators.required],
-        valor: [0, [Validators.required, Validators.min(0.01)]],
-        periodicidade: ['mensal' as PeriodicidadeCusto, Validators.required],
-        categoria: [''],
-        descricao: ['']
+  ngOnInit(): void { this.carregar(); }
+
+  carregar(): void {
+    this.loading.set(true);
+    this.service.listar().subscribe(data => {
+      this.custos.set(data);
+      this.loading.set(false);
     });
+  }
 
-    ngOnInit(): void { this.carregar(); }
+  abrirFormulario(c?: Custo): void {
+    this.editando.set(c ?? null);
+    this.erro.set(null);
+    this.form.reset({
+      project_name: c?.project_name ?? '',
+      description: c?.description ?? '',
+      estimated_amount: c?.estimated_amount ?? null,
+      actual_amount: c?.actual_amount ?? null,
+      status: c?.status ?? 'planned',
+      start_date: c?.start_date ?? '',
+      end_date: c?.end_date ?? ''
+    });
+    this.modalAberto.set(true);
+  }
 
-    carregar(): void {
-        this.loading.set(true);
-        this.service.listar().subscribe(data => {
-            this.custos.set(data);
-            this.loading.set(false);
-        });
-    }
+  fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
 
-    abrirFormulario(c?: Custo): void {
-        this.editando.set(c ?? null);
-        this.erro.set(null);
-        this.form.reset({
-            nome: c?.nome ?? '',
-            valor: c?.valor ?? 0,
-            periodicidade: c?.periodicidade ?? 'mensal',
-            categoria: c?.categoria ?? '',
-            descricao: c?.descricao ?? ''
-        });
-        this.modalAberto.set(true);
-    }
+  salvar(): void {
+    if (this.form.invalid) return;
+    this.salvando.set(true);
+    this.erro.set(null);
+    const raw = this.form.value;
+    const formValue: CustoForm = {
+      project_name: raw.project_name!,
+      description: raw.description || undefined,
+      estimated_amount: raw.estimated_amount ?? undefined,
+      actual_amount: raw.actual_amount ?? undefined,
+      status: raw.status as StatusCusto,
+      start_date: raw.start_date || undefined,
+      end_date: raw.end_date || undefined
+    };
+    const editando = this.editando();
+    const obs = editando
+      ? this.service.atualizar(editando.id, formValue)
+      : this.service.criar(formValue);
+    obs.subscribe(result => {
+      this.salvando.set(false);
+      if (result) { this.fecharFormulario(); this.carregar(); }
+      else this.erro.set('Erro ao salvar. Tente novamente.');
+    });
+  }
 
-    fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
+  confirmarExclusao(c: Custo): void { this.paraExcluir.set(c); }
 
-    salvar(): void {
-        if (this.form.invalid) return;
-        this.salvando.set(true);
-        this.erro.set(null);
-        const raw = this.form.value;
-        const formValue: CustoForm = {
-            nome: raw.nome!,
-            valor: raw.valor!,
-            periodicidade: raw.periodicidade as PeriodicidadeCusto,
-            categoria: raw.categoria || undefined,
-            descricao: raw.descricao || undefined
-        };
-        const editando = this.editando();
-        const obs = editando
-            ? this.service.atualizar(editando.id, formValue)
-            : this.service.criar(formValue);
-        obs.subscribe(result => {
-            this.salvando.set(false);
-            if (result) { this.fecharFormulario(); this.carregar(); }
-            else this.erro.set('Erro ao salvar. Tente novamente.');
-        });
-    }
+  excluir(): void {
+    const c = this.paraExcluir();
+    if (!c) return;
+    this.service.excluir(c.id).subscribe(ok => {
+      this.paraExcluir.set(null);
+      if (ok) this.carregar();
+    });
+  }
 
-    confirmarExclusao(c: Custo): void { this.paraExcluir.set(c); }
-
-    excluir(): void {
-        const c = this.paraExcluir();
-        if (!c) return;
-        this.service.excluir(c.id).subscribe(ok => {
-            this.paraExcluir.set(null);
-            if (ok) this.carregar();
-        });
-    }
-
-    periodicidadeLabel(p: PeriodicidadeCusto): string {
-        return PERIODICIDADE_LABELS[p] ?? p;
-    }
-
-    valorMensal(c: Custo): number {
-        if (c.periodicidade === 'mensal') return c.valor;
-        if (c.periodicidade === 'anual') return c.valor / 12;
-        return 0;
-    }
+  statusLabel(status: StatusCusto): string {
+    return STATUS_CUSTO_LABELS[status] ?? status;
+  }
 }

@@ -10,57 +10,60 @@ export class CustoService {
 
     listar(): Observable<Custo[]> {
         return from((async () => {
-            const { data, error } = await (this.supabase as any).client
-                .from('custos')
+            const { data, error } = await this.supabase.client
+                .from('costs')
                 .select('*')
-                .eq('active', true)
-                .order('nome');
-            if (error) throw error;
+                .order('project_name');
+            if (error) {
+                console.error('[CustoService] listar error:', error);
+                throw error;
+            }
             return data as Custo[];
-        })()).pipe(catchError(() => of([])));
+        })()).pipe(catchError(err => { console.error(err); return of([]); }));
     }
 
     criar(form: CustoForm): Observable<Custo | null> {
         return from((async () => {
-            const { data, error } = await (this.supabase as any).client
-                .from('custos')
+            const { data, error } = await this.supabase.client
+                .from('costs')
                 .insert(form)
                 .select('*')
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error('[CustoService] criar error:', error);
+                throw error;
+            }
             return data as Custo;
-        })()).pipe(catchError(() => of(null)));
+        })()).pipe(catchError(err => { console.error(err); return of(null); }));
     }
 
     atualizar(id: string, form: Partial<CustoForm>): Observable<Custo | null> {
         return from((async () => {
-            const { data, error } = await (this.supabase as any).client
-                .from('custos')
+            const { data, error } = await this.supabase.client
+                .from('costs')
                 .update({ ...form, updated_at: new Date().toISOString() })
                 .eq('id', id)
                 .select('*')
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error('[CustoService] atualizar error:', error);
+                throw error;
+            }
             return data as Custo;
-        })()).pipe(catchError(() => of(null)));
+        })()).pipe(catchError(err => { console.error(err); return of(null); }));
     }
 
     excluir(id: string): Observable<boolean> {
         return from((async () => {
-            const { error } = await (this.supabase as any).client
-                .from('custos')
-                .update({ active: false, updated_at: new Date().toISOString() })
+            const { error } = await this.supabase.client
+                .from('costs')
+                .delete()
                 .eq('id', id);
-            if (error) throw error;
+            if (error) {
+                console.error('[CustoService] excluir error:', error);
+                throw error;
+            }
             return true;
-        })()).pipe(catchError(() => of(false)));
-    }
-
-    calcularTotalMensal(custos: Custo[]): number {
-        return custos.reduce((acc, c) => {
-            if (c.periodicidade === 'mensal') return acc + c.valor;
-            if (c.periodicidade === 'anual') return acc + c.valor / 12;
-            return acc;
-        }, 0);
+        })()).pipe(catchError(err => { console.error(err); return of(false); }));
     }
 }
