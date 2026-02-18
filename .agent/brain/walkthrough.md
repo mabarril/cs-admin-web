@@ -1,239 +1,104 @@
-# Walkthrough: Implementação do Módulo de Autenticação
+# Walkthrough — cs-admin-web
 
-## Objetivo
-Implementar módulo completo de autenticação com login, controle de acesso baseado em roles, guards de rota e componentes de UI.
+## 1. Angular 18 Modernization
 
-## Mudanças Implementadas
+**Branch**: `feature/angular-modernization` → merged to `develop`
+**Build**: ✅ 0 errors
 
-### 📦 Core - Models
+### Files Changed
 
-#### [user-profile.model.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/models/user-profile.model.ts)
-- Tipo `UserRole` com 5 perfis: admin, secretary, treasury, counselor, board
-- Interface `UserProfile` com campos do banco de dados
-- Constantes `ROLE_NAMES` para exibição em português
-- Mapeamento `ROLE_PERMISSIONS` para controle de acesso
-
----
-
-### 🔧 Core - Services
-
-#### [auth.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/auth.service.ts)
-**Métodos de autenticação:**
-- `signIn()` - Login com email/senha
-- `signOut()` - Logout e redirect para login
-- `signUp()` - Registro de usuário (aguarda aprovação de admin)
-- `resetPassword()` - Envio de email de recuperação
-- `updatePassword()` - Atualização de senha
-
-**Gerenciamento de estado:**
-- `currentUserProfile$` - Observable do perfil do usuário
-- `isAuthenticated` - Verifica se usuário está autenticado e ativo
-- `hasRole()` / `hasAnyRole()` - Verificação de permissões
-- `isAdmin` - Atalho para verificar se é admin
-
-#### [user-profile.service.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/services/user-profile.service.ts)
-**CRUD de perfis:**
-- `getProfile()` - Buscar perfil por ID
-- `getAllProfiles()` - Listar todos os perfis
-- `getProfilesByRole()` - Filtrar por role
-- `getActiveProfiles()` - Apenas perfis ativos
-- `createProfile()` - Criar novo perfil (admin only)
-- `updateProfile()` - Atualizar perfil
-- `activateProfile()` / `deactivateProfile()` - Soft delete
-- `deleteProfile()` - Hard delete (admin only)
+| File | Change |
+|---|---|
+| `auth.service.ts` | Migrated `BehaviorSubject` → Angular `signal()` + `computed()` |
+| `profile.service.ts` | Extracted `user_profiles` DB ops from `AuthService` (SRP) |
+| `header.component.ts` | Signals, computed initials/role, SVG icons, mobile nav |
+| `sidebar.component.ts` | `visibleMenuItems` as `computed()`, SVG icons, `linkClicked` output |
+| `main-layout.component.ts` | New shell component with hamburger toggle, mobile overlay |
+| `app.routes.ts` | All protected routes under `MainLayoutComponent` parent |
+| `error.interceptor.ts` | Global 401/403/0 HTTP error handling with redirects |
+| `auth.guard.ts` / `role.guard.ts` | Updated to call Signals as functions `()` |
 
 ---
 
-### 🛡️ Core - Guards
+## 2. Módulo de Cadastros
 
-#### [auth.guard.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/guards/auth.guard.ts)
-- Protege rotas que requerem autenticação
-- Redireciona para `/login` se não autenticado
-- Preserva URL de destino em `returnUrl` query param
+**Branch**: `feature/cadastros-module` → merged to `develop`
+**Build**: ✅ 0 errors
 
-#### [role.guard.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/guards/role.guard.ts)
-- Factory function que recebe array de roles permitidos
-- Admin tem acesso a tudo automaticamente
-- Redireciona para `/access-denied` se sem permissão
-- Exemplo: `roleGuard(['admin', 'secretary'])`
+### Files Created
 
----
+| File | Description |
+|---|---|
+| `cadastros.model.ts` | Interfaces `Unidade`, `Classe`, `Desbravador` |
+| `unidade.service.ts` | CRUD → tabela `units` (soft-delete) |
+| `classe.service.ts` | CRUD → tabela `classes` |
+| `desbravador.service.ts` | CRUD → tabela `pathfinders` (join units + classes) |
+| `unidades.component.ts` | List + modal form + confirm dialog |
+| `classes.component.ts` | Card grid + modal + color picker |
+| `desbravadores.component.ts` | Table com avatars, badges de classe, cálculo de idade |
+| `cadastros.routes.ts` | Rotas lazy-loaded para as 3 sub-páginas |
 
-### 🔌 Core - Interceptors
-
-#### [auth.interceptor.ts](file:///home/barril/workspace/cs-admin-web/src/app/core/interceptors/auth.interceptor.ts)
-- Adiciona token JWT em todas as requisições HTTP
-- Trata erros 401 (não autorizado)
-- Redirect automático para login em caso de sessão expirada
-
----
-
-### 🎨 Features - Auth Components
-
-#### [LoginComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/login/login.component.ts)
-**Funcionalidades:**
-- Formulário reativo com validações (email, senha mínimo 6 caracteres)
-- Loading state durante autenticação
-- Exibição de mensagens de erro
-- Redirect para `returnUrl` após login bem-sucedido
-- Link para recuperação de senha
-
-**Design:**
-- Gradiente azul/indigo no fundo
-- Card centralizado com shadow
-- Campos com focus ring indigo
-- Botão com loading spinner
-- Responsivo (mobile-first)
-
-#### [ForgotPasswordComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/forgot-password/forgot-password.component.ts)
-- Formulário para solicitar reset de senha
-- Mensagens de sucesso/erro
-- Link para voltar ao login
-
-#### [AccessDeniedComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/auth/access-denied/access-denied.component.ts)
-- Página amigável de acesso negado
-- Ícone de alerta
-- Explicação sobre permissões necessárias
-- Botão para voltar ao dashboard
+**Decisões de design**:
+- Soft-delete (`active = false`) em todas as entidades
+- Estado local com `signal()` em todos os componentes
+- Dialogs de confirmação inline (sem `window.confirm`)
 
 ---
 
-### 🧩 Shared - Components
+## 3. Módulo Financeiro
 
-#### [HeaderComponent](file:///home/barril/workspace/cs-admin-web/src/app/shared/components/header/header.component.ts)
-**Funcionalidades:**
-- Exibe nome do usuário logado
-- Badge com role (em português)
-- Avatar com iniciais do nome
-- Menu dropdown com:
-  - Link para perfil
-  - Botão de logout
+**Branch**: `feature/financeiro-module` → merged to `develop`
+**Build**: ✅ 0 errors
+**Commits**:
+- `6e0b5d3` feat: implement Financeiro module
+- `9b8d1b8` fix: select desbravador by name in mensalidades form
+- `f66e5fa` fix: align financeiro module with real Supabase schema
 
-#### [SidebarComponent](file:///home/barril/workspace/cs-admin-web/src/app/shared/components/sidebar/sidebar.component.ts)
-**Menu dinâmico baseado em permissões:**
-- Dashboard (todos)
-- Cadastros (admin, secretary)
-- Financeiro (admin, treasury)
-- Administrativo (admin, secretary, board)
-- Relatórios (todos)
+### Bug corrigido: schema desalinhado
 
-Apenas exibe itens que o usuário tem permissão para acessar.
+Os serviços inicialmente usavam nomes de tabela/coluna incorretos. Após inspeção do `01_schema.sql`, todos os arquivos foram corrigidos:
 
----
+| Antes (errado) | Correto (schema real) |
+|---|---|
+| tabela `mensalidades` | `monthly_fees` |
+| `desbravador_id` | `pathfinder_id` |
+| `mes` + `ano` (int) | `reference_month` (DATE) |
+| `valor` | `amount` |
+| `data_pagamento` | `payment_date` |
+| `observacao` | `notes` |
+| tabela `lancamentos_caixa` | `cash_transactions` |
+| `tipo` | `type` (`income` / `expense`) |
+| `data` | `transaction_date` |
+| tabela `custos` (estrutura fantasiosa) | `costs` (`project_name`, `estimated_amount`, `actual_amount`) |
 
-### 📄 Features - Dashboard
+### Arquivos criados/corrigidos
 
-#### [DashboardComponent](file:///home/barril/workspace/cs-admin-web/src/app/features/dashboard/dashboard.component.ts)
-**Layout completo:**
-- Header no topo
-- Sidebar à esquerda
-- Área de conteúdo principal com:
-  - 4 cards de estatísticas (placeholders)
-  - Mensagem de boas-vindas
+| File | Description |
+|---|---|
+| `financeiro.model.ts` | Interfaces alinhadas ao schema: `Mensalidade`, `LancamentoCaixa`, `Custo` + helpers `toReferenceMonth()` / `fromReferenceMonth()` |
+| `mensalidade.service.ts` | CRUD → `monthly_fees`. Filtra por `reference_month` range. `marcarPago()` usa status `paid` |
+| `caixa.service.ts` | CRUD → `cash_transactions`. `calcularSaldo()` usa `type` income/expense |
+| `custo.service.ts` | CRUD → `costs`. Sem soft-delete (coluna `active` não existe) |
+| `mensalidades.component.ts` | Tabela com competência formatada, select de desbravador por nome, botão "Pagar" inline, badges de status |
+| `caixa.component.ts` | Cards Entradas / Saídas / Saldo, tabela colorida por tipo, modal com `transaction_date` |
+| `custos.component.ts` | Tabela de projetos com `estimated_amount` vs `actual_amount`, modal com status do projeto |
+| `financeiro.routes.ts` | Lazy-loaded: mensalidades (default), caixa, custos |
 
----
-
-### 🛣️ Routing
-
-#### [app.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/app.routes.ts)
-**Rotas públicas:**
-- `/login` - LoginComponent
-- `/forgot-password` - ForgotPasswordComponent
-- `/access-denied` - AccessDeniedComponent
-
-**Rotas protegidas:**
-- `/dashboard` - Requer autenticação
-- `/cadastros` - Requer admin ou secretary
-- `/financeiro` - Requer admin ou treasury
-- `/administrativo` - Requer admin, secretary ou board
-- `/relatorios` - Requer autenticação
-
-**Lazy loading:**
-Todos os módulos usam lazy loading para otimização.
-
-#### Arquivos de rotas dos módulos:
-- [cadastros.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/cadastros/cadastros.routes.ts)
-- [financeiro.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/financeiro/financeiro.routes.ts)
-- [administrativo.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/administrativo/administrativo.routes.ts)
-- [relatorios.routes.ts](file:///home/barril/workspace/cs-admin-web/src/app/features/relatorios/relatorios.routes.ts)
-
-Criados vazios, prontos para receber rotas dos respectivos módulos.
+### Melhorias UX
+- Seleção de desbravador por **nome** (select ordenado alfabeticamente) em vez de UUID
+- Formulário de mensalidade usa campos `mes`/`ano` separados, convertidos para `reference_month` ao salvar
+- Botão de ação inline renomeado de "✓ Pago" → **"Pagar"**
+- Erros do Supabase logados no console com `console.error` para facilitar debug
 
 ---
 
-### ⚙️ Configuration
+## Estado atual do projeto
 
-#### [app.config.ts](file:///home/barril/workspace/cs-admin-web/src/app/app.config.ts)
-Adicionado `provideHttpClient` com `authInterceptor`.
-
----
-
-## ✅ Resumo
-
-**20 arquivos criados/modificados:**
-- 1 model
-- 2 services
-- 2 guards
-- 1 interceptor
-- 3 componentes de autenticação
-- 2 componentes shared
-- 1 dashboard atualizado
-- 2 arquivos de configuração
-- 4 arquivos de rotas de módulos
-- 1 arquivo de rotas principal
-
-**Funcionalidades implementadas:**
-- ✅ Login/logout completo
-- ✅ Controle de acesso baseado em 5 roles
-- ✅ Guards de rota (autenticação + role)
-- ✅ Interceptor HTTP com token JWT
-- ✅ Recuperação de senha
-- ✅ Menu dinâmico baseado em permissões
-- ✅ Layout completo com Header + Sidebar
-- ✅ Página de acesso negado
-- ✅ Lazy loading de módulos
-
----
-
-## 🧪 Próximos Passos
-
-### 1. Criar Usuário Admin no Supabase
-
-**No Supabase Dashboard:**
-1. Authentication → Users → Add user
-2. Email: `admin@clube.com`
-3. Password: (definir senha segura)
-4. Copiar UUID do usuário criado
-
-**No SQL Editor:**
-```sql
-INSERT INTO public.user_profiles (id, full_name, role, active)
-VALUES ('<UUID_DO_USUARIO>', 'Administrador', 'admin', true);
 ```
+develop
+├── Angular 18 modernization (Signals, interceptor, layout)
+├── Módulo Cadastros (Unidades, Classes, Desbravadores)
+└── Módulo Financeiro (Mensalidades, Caixa, Custos)
 
-### 2. Testar Fluxo de Login
-- Acessar `http://localhost:4200/login`
-- Fazer login com credenciais do admin
-- Verificar redirect para dashboard
-- Verificar nome e role no header
-- Verificar menu exibe todas as opções
-
-### 3. Testar Controle de Acesso
-Criar usuários com diferentes roles e testar:
-- Secretary: deve ver Cadastros e Administrativo
-- Treasury: deve ver apenas Financeiro
-- Tentar acessar rotas sem permissão → Ver página de acesso negado
-
-### 4. Testes Pendentes
-- [ ] Testes unitários dos services
-- [ ] Testes dos guards
-- [ ] Testes dos componentes
-- [ ] Teste de recuperação de senha
-
----
-
-## 📌 Observações
-
-- **Erros de lint**: AuthService tem alguns erros relacionados aos tipos de retorno do SupabaseService. Precisam ser ajustados conforme a implementação real do Supabase.
-- **Registro desabilitado**: O componente de registro não foi criado pois o fluxo é: admin cria usuário no Supabase Auth + adiciona perfil manualmente.
-- **Primeiro acesso**: É necessário criar manualmente o primeiro usuário admin no Supabase.
+Próximo: Módulo Administrativo (Patrimônio, Atas, Atos)
+```
