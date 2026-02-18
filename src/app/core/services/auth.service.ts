@@ -1,8 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, from, of } from 'rxjs';
-import { map, switchMap, tap, catchError } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
+import { ProfileService } from './profile.service';
 import { UserProfile, UserRole } from '../models/user-profile.model';
 
 @Injectable({
@@ -10,65 +9,52 @@ import { UserProfile, UserRole } from '../models/user-profile.model';
 })
 export class AuthService {
     private supabase = inject(SupabaseService);
+    private profileService = inject(ProfileService);
     private router = inject(Router);
 
-    private currentUserProfileSubject = new BehaviorSubject<UserProfile | null>(null);
-    public currentUserProfile$ = this.currentUserProfileSubject.asObservable();
+    // --- State as Signals ---
+    private _currentUserProfile = signal<UserProfile | null>(null);
+
+    /** Perfil do usuário atual (somente leitura) */
+    readonly currentUserProfile = this._currentUserProfile.asReadonly();
+
+    /** Verdadeiro se o usuário está autenticado e ativo */
+    readonly isAuthenticated = computed(() =>
+        this._currentUserProfile() !== null && (this._currentUserProfile()?.active ?? false)
+    );
+
+    /** Role do usuário atual */
+    readonly userRole = computed(() => this._currentUserProfile()?.role ?? null);
+
+    /** Verdadeiro se o usuário é admin */
+    readonly isAdmin = computed(() => this._currentUserProfile()?.role === 'admin');
 
     constructor() {
-        // Initialize user profile on service creation
         this.initializeUserProfile();
     }
 
     /**
-     * Initialize user profile from current session
+     * Inicializa o perfil do usuário a partir da sessão atual e escuta mudanças de auth.
      */
     private initializeUserProfile(): void {
-        this.supabase.user$.pipe(
-            switchMap(user => {
-                if (!user) {
-                    this.currentUserProfileSubject.next(null);
-                    return of(null);
-                }
-                return this.loadUserProfile(user.id);
-            })
-        ).subscribe();
+        // Carrega o perfil para o usuário atual ao iniciar
+        this.supabase.user$.subscribe(user => {
+            if (!user) {
+                this._currentUserProfile.set(null);
+                return;
+            }
+            this.profileService.getProfile(user.id).subscribe(profile => {
+                this._currentUserProfile.set(profile);
+            });
+        });
     }
 
     /**
-     * Load user profile from database
-     */
-    private loadUserProfile(userId: string): Observable<UserProfile | null> {
-        return from(
-            this.supabase.client
-                .from('user_profiles')
-                .select('*')
-                .eq('id', userId)
-                .single()
-        ).pipe(
-            map(({ data, error }) => {
-                if (error || !data) {
-                    console.error('Error loading user profile:', error);
-                    return null;
-                }
-                this.currentUserProfileSubject.next(data as UserProfile);
-                return data as UserProfile;
-            }),
-            catchError(err => {
-                console.error('Error loading user profile:', err);
-                this.currentUserProfileSubject.next(null);
-                return of(null);
-            })
-        );
-    }
-
-    /**
-     * Sign in with email and password
+     * Realiza o login com email e senha.
      */
     async signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
         try {
             await this.supabase.signIn(email, password);
-            // User profile will be loaded automatically by the subscription
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message || 'Erro ao fazer login' };
@@ -76,21 +62,20 @@ export class AuthService {
     }
 
     /**
-     * Sign out current user
+     * Realiza o logout do usuário atual.
      */
     async signOut(): Promise<void> {
         await this.supabase.signOut();
-        this.currentUserProfileSubject.next(null);
+        this._currentUserProfile.set(null);
         this.router.navigate(['/login']);
     }
 
     /**
-     * Sign up new user (creates auth user, profile must be created by admin)
+     * Cria uma nova conta de usuário.
      */
     async signUp(email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> {
         try {
             await this.supabase.signUp(email, password, { full_name: fullName });
-            // Note: User profile should be created by admin with appropriate role
             return {
                 success: true,
                 error: 'Conta criada! Aguarde aprovação do administrador para acessar o sistema.'
@@ -101,7 +86,7 @@ export class AuthService {
     }
 
     /**
-     * Request password reset
+     * Solicita o reset de senha por email.
      */
     async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
         try {
@@ -113,7 +98,7 @@ export class AuthService {
     }
 
     /**
-     * Update user password
+     * Atualiza a senha do usuário logado.
      */
     async updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
         try {
@@ -125,45 +110,18 @@ export class AuthService {
     }
 
     /**
-     * Get current user profile
-     */
-    get currentUserProfile(): UserProfile | null {
-        return this.currentUserProfileSubject.value;
-    }
-
-    /**
-     * Check if user is authenticated
-     */
-    get isAuthenticated(): boolean {
-        return this.currentUserProfile !== null && this.currentUserProfile.active;
-    }
-
-    /**
-     * Check if user has specific role
+     * Verifica se o usuário possui um role específico.
      */
     hasRole(role: UserRole): boolean {
-        return this.currentUserProfile?.role === role;
+        return this._currentUserProfile()?.role === role;
     }
 
     /**
-     * Check if user has any of the specified roles
+     * Verifica se o usuário possui qualquer um dos roles especificados.
      */
     hasAnyRole(roles: UserRole[]): boolean {
-        if (!this.currentUserProfile) return false;
-        return roles.includes(this.currentUserProfile.role);
-    }
-
-    /**
-     * Check if user is admin
-     */
-    get isAdmin(): boolean {
-        return this.hasRole('admin');
-    }
-
-    /**
-     * Get user's role
-     */
-    get userRole(): UserRole | null {
-        return this.currentUserProfile?.role || null;
+        const profile = this._currentUserProfile();
+        if (!profile) return false;
+        return roles.includes(profile.role);
     }
 }
