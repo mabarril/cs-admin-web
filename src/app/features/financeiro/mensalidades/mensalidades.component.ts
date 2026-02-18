@@ -125,7 +125,7 @@ import { Desbravador } from '../../../core/models/cadastros.model';
                     <div class="flex justify-end gap-2">
                       @if (m.status !== 'paid') {
                         <button (click)="marcarPago(m)" class="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-                          ✓ Pago
+                          Pagar
                         </button>
                       }
                       <button (click)="abrirFormulario(m)" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
