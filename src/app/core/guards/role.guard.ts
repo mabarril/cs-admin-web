@@ -13,14 +13,14 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
         const router = inject(Router);
 
         // First check if user is authenticated
-        if (!authService.isAuthenticated) {
+        if (!authService.isAuthenticated()) {
             return router.createUrlTree(['/login'], {
                 queryParams: { returnUrl: state.url }
             });
         }
 
         // Admin has access to everything
-        if (authService.isAdmin) {
+        if (authService.isAdmin()) {
             return true;
         }
 

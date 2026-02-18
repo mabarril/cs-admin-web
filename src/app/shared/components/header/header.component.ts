@@ -1,54 +1,64 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ROLE_NAMES } from '../../../core/models/user-profile.model';
 
 @Component({
-    selector: 'app-header',
-    standalone: true,
-    imports: [CommonModule, RouterLink],
-    template: `
+  selector: 'app-header',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  template: `
     <header class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Title -->
-          <div class="flex items-center">
-            <h1 class="text-xl font-bold text-gray-900">Sistema de Gerenciamento</h1>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h1 class="text-lg font-bold text-gray-900">Clube de Desbravadores</h1>
           </div>
 
           <!-- User Menu -->
-          @if (userProfile) {
-            <div class="flex items-center space-x-4">
+          @if (userProfile()) {
+            <div class="flex items-center gap-4">
               <!-- User Info -->
-              <div class="text-right">
-                <p class="text-sm font-medium text-gray-900">{{ userProfile.full_name }}</p>
-                <p class="text-xs text-gray-500">{{ getRoleName(userProfile.role) }}</p>
+              <div class="text-right hidden sm:block">
+                <p class="text-sm font-medium text-gray-900">{{ userProfile()!.full_name }}</p>
+                <p class="text-xs text-gray-500">{{ roleName() }}</p>
               </div>
 
-              <!-- Avatar -->
+              <!-- Avatar with Dropdown -->
               <div class="relative">
                 <button
                   (click)="toggleMenu()"
-                  class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                  class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  [attr.aria-label]="'Menu do usuário ' + userProfile()!.full_name"
                 >
-                  {{ getInitials(userProfile.full_name) }}
+                  {{ initials() }}
                 </button>
 
                 <!-- Dropdown Menu -->
-                @if (showMenu) {
+                @if (showMenu()) {
                   <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
+                    <div class="px-4 py-2 border-b border-gray-100 sm:hidden">
+                      <p class="text-sm font-medium text-gray-900">{{ userProfile()!.full_name }}</p>
+                      <p class="text-xs text-gray-500">{{ roleName() }}</p>
+                    </div>
                     <a
                       routerLink="/profile"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-                      (click)="toggleMenu()"
+                      class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      (click)="closeMenu()"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       Meu Perfil
                     </a>
                     <button
                       (click)="logout()"
-                      class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition"
+                      class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                       Sair
                     </button>
                   </div>
@@ -60,40 +70,43 @@ import { ROLE_NAMES } from '../../../core/models/user-profile.model';
       </div>
     </header>
   `,
-    styles: []
+  styles: []
 })
 export class HeaderComponent {
-    private authService = inject(AuthService);
-    private router = inject(Router);
+  private authService = inject(AuthService);
 
-    showMenu = false;
-    userProfile = this.authService.currentUserProfile;
+  // Signals from AuthService
+  readonly userProfile = this.authService.currentUserProfile;
 
-    constructor() {
-        // Subscribe to user profile changes
-        this.authService.currentUserProfile$.subscribe(profile => {
-            this.userProfile = profile;
-        });
-    }
+  // Local UI state
+  readonly showMenu = signal(false);
 
-    toggleMenu(): void {
-        this.showMenu = !this.showMenu;
-    }
+  // Computed values
+  readonly initials = computed(() => {
+    const name = this.userProfile()?.full_name ?? '';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  });
 
-    getInitials(fullName: string): string {
-        return fullName
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
-    }
+  readonly roleName = computed(() => {
+    const role = this.userProfile()?.role;
+    return role ? (ROLE_NAMES[role] ?? role) : '';
+  });
 
-    getRoleName(role: string): string {
-        return ROLE_NAMES[role as keyof typeof ROLE_NAMES] || role;
-    }
+  toggleMenu(): void {
+    this.showMenu.update(v => !v);
+  }
 
-    async logout(): Promise<void> {
-        await this.authService.signOut();
-    }
+  closeMenu(): void {
+    this.showMenu.set(false);
+  }
+
+  async logout(): Promise<void> {
+    this.showMenu.set(false);
+    await this.authService.signOut();
+  }
 }
