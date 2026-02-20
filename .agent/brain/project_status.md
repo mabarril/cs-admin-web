@@ -1,179 +1,101 @@
 # Status do Projeto - Club Management System
 
-**Data da Análise**: 09/02/2026  
-**Versão Atual**: 0.1.0
+**Última atualização**: 19/02/2026
+**Versão Atual**: 0.4.0
+**Branch principal**: `develop` (commit `53253ad`)
 
 ## 📊 Resumo Executivo
 
-O projeto completou a **Fase 2 (Infraestrutura)** e está pronto para iniciar a **Fase 3 (Módulos Core - Autenticação)**.
+O projeto completou **4 módulos funcionais** e está pronto para iniciar o **Módulo Relatórios**.
 
 ### Progresso Geral
-- ✅ **Fase 1 - Planejamento**: 100% concluída
-- ✅ **Fase 2 - Infraestrutura**: 100% concluída (exceto CI/CD)
-- ⏳ **Fase 3 - Módulos Core**: 0% (próxima fase)
+- ✅ **Fase 1 - Planejamento**: 100%
+- ✅ **Fase 2 - Infraestrutura**: 100%
+- ✅ **Fase 3 - Auth + Layout**: 100%
+- ✅ **Fase 4 - Cadastros**: 100%
+- ✅ **Fase 5 - Financeiro**: 100%
+- ✅ **Fase 6 - Administrativo**: 100%
+- ⏳ **Fase 7 - Relatórios**: 0% (próxima)
+
+**Progresso geral**: ~75%
 
 ---
 
-## ✅ O Que Foi Concluído
+## ✅ Módulos Concluídos
 
-### Fase 1: Planejamento e Documentação (100%)
-- [x] Especificação completa do projeto
-- [x] Arquitetura do sistema definida
-- [x] Schema do banco de dados Supabase documentado
-- [x] Histórias de usuário com cenários de teste
-- [x] Estrutura de controle de versão e branches
-- [x] Guia de prompts para desenvolvimento com IA
+### Autenticação + Layout
+**Branch**: `feature/angular-modernization` → `develop`
+- Supabase Auth com Angular Signals
+- Guards `authGuard` + `roleGuard` por perfil
+- `MainLayoutComponent` com sidebar colapsável e header
+- Interceptors de auth e erro (401/403)
+- Perfis: `admin`, `secretary`, `treasury`, `counselor`, `board`
 
-**Artefatos Criados**:
-- `database_schema.md` - Schema completo do banco de dados
-- `user_stories.md` - 14.639 bytes de histórias de usuário
-- `git_structure.md` - Estrutura Git Flow e versionamento
-- `prompts_guide.md` - 23.992 bytes de guia de prompts
-- `best_practices.md` - 13.330 bytes de boas práticas
-- `implementation_plan.md` - Plano de implementação completo
+### Módulo Cadastros
+**Branch**: `feature/cadastros-module` → `develop`
+- Unidades (`units`) — CRUD + soft-delete
+- Classes (`classes`) — CRUD + color picker
+- Desbravadores (`pathfinders`) — avatar, badge de classe, idade calculada
 
-### Fase 2: Infraestrutura (100% ✅)
-- [x] Projeto Angular 18 configurado
-- [x] Tailwind CSS 3.4.1 integrado
-- [x] Supabase JS Client instalado (v2.39.0)
-- [x] Estrutura de diretórios criada
-- [x] Sistema de versionamento de artefatos
-- [x] Repositório Git configurado com Git Flow
-- [x] Configuração completa do Supabase (schema, RLS, triggers, views)
-- [x] Scripts SQL criados e executados
-- [x] SupabaseService implementado
-- [x] Credenciais configuradas
-- [ ] ⏳ CI/CD básico
+### Módulo Financeiro
+**Branch**: `feature/financeiro-module` → `develop`
+- Mensalidades (`monthly_fees`) — seleção por nome, `reference_month`
+- Caixa (`cash_transactions`) — cards Entradas/Saídas/Saldo
+- Custos (`costs`) — `estimated_amount` vs `actual_amount`
 
-**Estrutura Atual do Projeto**:
+### Módulo Administrativo
+**Branch**: `feature/administrativo-module` → `develop`
+- Shell com **abas de navegação** entre sub-páginas
+- Patrimônio (`assets`) — filtro por status, badge colorido
+- Atas (`minutes`) — participantes via campo separado por vírgula
+- Atos (`acts`) — badge de número circular
+- Autorizações de Saída (`exit_authorizations`) — select desbravador por nome, horários
+
+---
+
+## 📁 Estrutura Atual do Projeto
+
 ```
 cs-admin-web/
-├── .agent/                      # ✅ Sistema de artefatos
-│   ├── brain/                   # Documentação do agente
-│   └── workflows/               # Workflows reutilizáveis
-├── src/
-│   ├── app/
-│   │   ├── core/               # ✅ Estrutura criada
-│   │   │   ├── guards/
-│   │   │   ├── interceptors/
-│   │   │   ├── models/
-│   │   │   └── services/
-│   │   ├── features/           # ✅ Módulos organizados
-│   │   │   ├── auth/
-│   │   │   ├── cadastros/
-│   │   │   ├── financeiro/
-│   │   │   ├── administrativo/
-│   │   │   ├── relatorios/
-│   │   │   └── dashboard/
-│   │   └── shared/
-│   └── styles/
-├── tailwind.config.js          # ✅ Configurado
-└── package.json                # ✅ Dependências instaladas
+├── .agent/brain/               # Documentação e histórico
+├── src/app/
+│   ├── core/
+│   │   ├── guards/             # authGuard, roleGuard
+│   │   ├── interceptors/       # auth, error
+│   │   ├── models/             # cadastros.model, user-profile.model
+│   │   └── services/           # SupabaseService, AuthService, ProfileService
+│   ├── features/
+│   │   ├── auth/               # ✅ Login
+│   │   ├── dashboard/          # ✅ Página inicial
+│   │   ├── cadastros/          # ✅ Unidades, Classes, Desbravadores
+│   │   ├── financeiro/         # ✅ Mensalidades, Caixa, Custos
+│   │   ├── administrativo/     # ✅ Patrimônio, Atas, Atos, Autorizações
+│   │   └── relatorios/         # ⏳ Pendente
+│   └── shared/
+│       └── components/         # MainLayout, Header (user menu), Sidebar
+└── supabase/migrations/        # 01_schema.sql
 ```
 
 ---
 
-## ✅ Recém Concluído
+## 📋 Roadmap
 
-### Configuração do Supabase
-- ✅ Projeto criado no Supabase Cloud
-- ✅ 6 scripts SQL executados (schema, indexes, triggers, views, RLS, seed)
-- ✅ 15 tabelas criadas no banco de dados
-- ✅ SupabaseService implementado com autenticação
-- ✅ Credenciais configuradas
-- ✅ Commits realizados
-
----
-
-## ⏳ Próximas Etapas (Fase 3: Módulos Core)
-
-### 1. Sistema de Autenticação
-- [ ] Implementar Supabase Auth
-- [ ] Criar guards de autenticação
-- [ ] Implementar controle de acesso por perfis:
-  - Admin
-  - Secretaria
-  - Tesouraria
-  - Conselheiros
-  - Diretoria
-
-### 3. Design System e Componentes Base
-- [ ] Criar componentes base (botões, inputs, cards)
-- [ ] Implementar layout responsivo principal
-- [ ] Configurar tema e cores
-- [ ] Criar componentes de navegação
+| Fase | Status | Entregas |
+|------|--------|----------|
+| 1. Planejamento | ✅ | Documentação, schema DB, HUs |
+| 2. Infraestrutura | ✅ | Angular 18, Supabase, Git Flow |
+| 3. Auth + Layout | ✅ | Login, guards, layout responsivo |
+| 4. Cadastros | ✅ | Unidades, Classes, Desbravadores |
+| 5. Financeiro | ✅ | Mensalidades, Caixa, Custos |
+| 6. Administrativo | ✅ | Patrimônio, Atas, Atos, Autorizações |
+| **7. Relatórios** | ⏳ **Próximo** | Relatórios exportáveis por módulo |
+| 8. Testes e Docs | ⏳ | Testes, documentação final |
 
 ---
 
-## 📋 Roadmap Completo
+## ⏳ Próximas Etapas — Módulo Relatórios
 
-| Fase | Status | Duração Estimada | Entregas |
-|------|--------|------------------|----------|
-| **1. Planejamento** | ✅ Concluída | 1 semana | Documentação completa, schema DB |
-| **2. Infraestrutura** | ✅ Concluída | 1 semana | Projeto configurado, Supabase setup |
-| **3. Autenticação** | ⏳ Pendente | 1 semana | Login, controle de acesso |
-| **4. Cadastros** | ⏳ Pendente | 2 semanas | CRUD completo, importação |
-| **5. Financeiro** | ⏳ Pendente | 2 semanas | Mensalidades, caixa, custos |
-| **6. Administrativo** | ⏳ Pendente | 2 semanas | Patrimônio, atas, atos |
-| **7. Relatórios** | ⏳ Pendente | 1 semana | Todos os relatórios |
-| **8. Testes e Docs** | ⏳ Pendente | 1 semana | Testes, documentação |
-
-**Tempo Total Estimado**: 11 semanas  
-**Tempo Decorrido**: ~2 semanas  
-**Progresso Geral**: ~25%
-
----
-
-## 🎯 Recomendações Imediatas
-
-### Prioridade Alta
-1. **Implementar Autenticação**
-   - Criar componentes de login/registro
-   - Implementar guards de autenticação
-   - Criar serviço de gerenciamento de perfis
-   - Implementar controle de acesso por roles
-
-### Prioridade Média
-3. **Design System**
-   - Criar componentes base reutilizáveis
-   - Definir paleta de cores e tipografia
-   - Implementar layout principal
-
-### Prioridade Baixa
-4. **CI/CD**
-   - Configurar GitHub Actions
-   - Setup de deploy automático
-
----
-
-## 📚 Documentação Disponível
-
-Toda a documentação de planejamento está disponível em:
-- `/home/barril/.gemini/antigravity/brain/0382dde5-ff69-4bdb-b007-5bd83e922cd3/`
-
-### Principais Documentos
-- **database_schema.md** - Schema completo do Supabase
-- **user_stories.md** - Histórias de usuário detalhadas
-- **prompts_guide.md** - Guia para desenvolvimento com IA
-- **best_practices.md** - Boas práticas do projeto
-- **git_structure.md** - Estrutura Git e versionamento
-
----
-
-## 🔗 Links Úteis
-
-- [Plano de Implementação Original](file:///home/barril/.gemini/antigravity/brain/0382dde5-ff69-4bdb-b007-5bd83e922cd3/implementation_plan.md)
-- [Schema do Banco de Dados](file:///home/barril/.gemini/antigravity/brain/0382dde5-ff69-4bdb-b007-5bd83e922cd3/database_schema.md)
-- [Histórias de Usuário](file:///home/barril/.gemini/antigravity/brain/0382dde5-ff69-4bdb-b007-5bd83e922cd3/user_stories.md)
-- [Guia de Prompts](file:///home/barril/.gemini/antigravity/brain/0382dde5-ff69-4bdb-b007-5bd83e922cd3/prompts_guide.md)
-
----
-
-## 💡 Observações
-
-- ✅ A estrutura do projeto está bem organizada e segue as melhores práticas
-- ✅ Sistema de versionamento de artefatos implementado com sucesso
-- ✅ Supabase configurado e pronto para uso
-- ✅ Backend completo com 15 tabelas, RLS, triggers e views
-- ⏳ Módulos criados estão vazios, aguardando implementação
-- 📌 Próximo passo: Implementar módulo de autenticação
+- [ ] Relatório de desbravadores ativos/inativos
+- [ ] Relatório financeiro (mensalidades em aberto, fluxo de caixa)
+- [ ] Relatório de patrimônio por status
+- [ ] Exportação PDF/Excel

@@ -56,8 +56,6 @@
 
 ### Bug corrigido: schema desalinhado
 
-Os serviços inicialmente usavam nomes de tabela/coluna incorretos. Após inspeção do `01_schema.sql`, todos os arquivos foram corrigidos:
-
 | Antes (errado) | Correto (schema real) |
 |---|---|
 | tabela `mensalidades` | `monthly_fees` |
@@ -75,30 +73,65 @@ Os serviços inicialmente usavam nomes de tabela/coluna incorretos. Após inspe�
 
 | File | Description |
 |---|---|
-| `financeiro.model.ts` | Interfaces alinhadas ao schema: `Mensalidade`, `LancamentoCaixa`, `Custo` + helpers `toReferenceMonth()` / `fromReferenceMonth()` |
-| `mensalidade.service.ts` | CRUD → `monthly_fees`. Filtra por `reference_month` range. `marcarPago()` usa status `paid` |
+| `financeiro.model.ts` | Interfaces alinhadas ao schema: `Mensalidade`, `LancamentoCaixa`, `Custo` |
+| `mensalidade.service.ts` | CRUD → `monthly_fees`. `marcarPago()` usa status `paid` |
 | `caixa.service.ts` | CRUD → `cash_transactions`. `calcularSaldo()` usa `type` income/expense |
-| `custo.service.ts` | CRUD → `costs`. Sem soft-delete (coluna `active` não existe) |
-| `mensalidades.component.ts` | Tabela com competência formatada, select de desbravador por nome, botão "Pagar" inline, badges de status |
-| `caixa.component.ts` | Cards Entradas / Saídas / Saldo, tabela colorida por tipo, modal com `transaction_date` |
-| `custos.component.ts` | Tabela de projetos com `estimated_amount` vs `actual_amount`, modal com status do projeto |
+| `custo.service.ts` | CRUD → `costs`. Sem soft-delete |
+| `mensalidades.component.ts` | Select de desbravador por nome, botão "Pagar" inline, badges de status |
+| `caixa.component.ts` | Cards Entradas / Saídas / Saldo, tabela colorida por tipo |
+| `custos.component.ts` | Tabela com `estimated_amount` vs `actual_amount` |
 | `financeiro.routes.ts` | Lazy-loaded: mensalidades (default), caixa, custos |
 
-### Melhorias UX
-- Seleção de desbravador por **nome** (select ordenado alfabeticamente) em vez de UUID
-- Formulário de mensalidade usa campos `mes`/`ano` separados, convertidos para `reference_month` ao salvar
-- Botão de ação inline renomeado de "✓ Pago" → **"Pagar"**
-- Erros do Supabase logados no console com `console.error` para facilitar debug
+---
+
+## 4. Módulo Administrativo
+
+**Branch**: `feature/administrativo-module` → merged to `develop`
+**Build**: ✅ 0 errors
+**Commits**:
+- `ef1557b` feat: implement Módulo Administrativo (Patrimônio, Atas, Atos, Autorizações)
+- `8bdb904` fix(ux): locale pt-BR + sub-navegação por abas
+- `d62c1d2` fix(header): título duplicado no header removido
+
+### Arquivos criados
+
+| File | Tabela Supabase | Destaques |
+|---|---|---|
+| `administrativo.model.ts` | — | Interfaces `Asset`, `Ata`, `Ato`, `Autorizacao` |
+| `patrimonio.service.ts` | `assets` | CRUD, hard delete |
+| `patrimonio.component.ts` | — | Tabela + filtro por status + modal |
+| `ata.service.ts` | `minutes` | CRUD |
+| `atas.component.ts` | — | Participantes via vírgula → `string[]` |
+| `ato.service.ts` | `acts` | CRUD, hard delete |
+| `atos.component.ts` | — | Badge de número circular |
+| `autorizacao.service.ts` | `exit_authorizations` | JOIN com `pathfinders` para nome |
+| `autorizacoes.component.ts` | — | Select desbravador por nome, campos de horário |
+| `administrativo-shell.component.ts` | — | Shell com abas de navegação (🏛️/📋/📜/✅) |
+| `administrativo.routes.ts` | — | Shell como parent, 4 sub-rotas como children |
+
+### Correções de usabilidade (teste estático)
+
+| Problema | Correção |
+|---|---|
+| `currency:'BRL'` sem locale → `BRL 150.00` | `registerLocaleData(localePt)` + `LOCALE_ID: 'pt'` em `app.config.ts` |
+| Sem sub-navegação entre sub-páginas | `AdministrativoShellComponent` com abas via `routerLinkActive` |
+| Título "Clube de Desbravadores" duplicado no header | `HeaderComponent` refatorado para renderizar apenas o user menu |
 
 ---
 
 ## Estado atual do projeto
 
 ```
-develop
+develop (53253ad — 2026-02-19)
 ├── Angular 18 modernization (Signals, interceptor, layout)
 ├── Módulo Cadastros (Unidades, Classes, Desbravadores)
-└── Módulo Financeiro (Mensalidades, Caixa, Custos)
+├── Módulo Financeiro (Mensalidades, Caixa, Custos)
+└── Módulo Administrativo ✅
+    ├── Shell com abas de navegação
+    ├── Patrimônio (assets)
+    ├── Atas (minutes)
+    ├── Atos (acts)
+    └── Autorizações de Saída (exit_authorizations)
 
-Próximo: Módulo Administrativo (Patrimônio, Atas, Atos)
+Próximo: Módulo Relatórios
 ```
