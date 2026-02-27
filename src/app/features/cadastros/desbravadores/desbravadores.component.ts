@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DesbravadorService } from '../services/desbravador.service';
 import { UnidadeService } from '../services/unidade.service';
@@ -8,7 +8,7 @@ import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS } from '..
 
 @Component({
     selector: 'app-desbravadores',
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">

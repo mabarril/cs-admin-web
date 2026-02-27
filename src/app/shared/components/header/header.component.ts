@@ -1,12 +1,12 @@
 import { Component, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ROLE_NAMES } from '../../../core/models/user-profile.model';
 
 @Component({
     selector: 'app-header',
-    imports: [CommonModule, RouterLink],
+    imports: [RouterLink],
     template: `
     <ng-container>
 

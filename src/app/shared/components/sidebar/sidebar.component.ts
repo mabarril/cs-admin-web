@@ -1,5 +1,5 @@
 import { Component, inject, computed, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserRole } from '../../../core/models/user-profile.model';
@@ -46,7 +46,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
 
 @Component({
     selector: 'app-sidebar',
-    imports: [CommonModule, RouterLink, RouterLinkActive],
+    imports: [RouterLink, RouterLinkActive],
     template: `
     <aside class="w-64 bg-gray-900 text-white h-full flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700">

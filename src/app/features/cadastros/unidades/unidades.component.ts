@@ -1,12 +1,12 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { UnidadeService } from '../services/unidade.service';
 import { Unidade, UnidadeForm } from '../../../core/models/cadastros.model';
 
 @Component({
     selector: 'app-unidades',
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">
       <!-- Header -->

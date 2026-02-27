@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ClasseService } from '../services/classe.service';
 import { Classe, ClasseForm } from '../../../core/models/cadastros.model';
@@ -15,7 +15,7 @@ const CLASSES_PADRAO = [
 
 @Component({
     selector: 'app-classes',
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">

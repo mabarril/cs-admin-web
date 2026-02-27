@@ -1,12 +1,12 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 
 @Component({
     selector: 'app-main-layout',
-    imports: [CommonModule, RouterOutlet, HeaderComponent, SidebarComponent],
+    imports: [RouterOutlet, HeaderComponent, SidebarComponent],
     template: `
     <div class="min-h-screen bg-gray-50">
 
