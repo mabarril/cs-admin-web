@@ -30,6 +30,17 @@ A migração ocorreu em dois grandes saltos, conforme exige o Angular CLI, prese
 - ✅ O build compila perfeitamente sob TypeScript 5.8.
 - ✅ *Jest Builder*: O ambiente antigo do Karma (depreciado) precisava ser convertido; tentamos injetar o Jest, porém encontramos resistências dos schematics experimentais nas dependências. A aplicação foi entregue funcional na parte do build de render e isso pode ser testado com `npm start`.
 
+### 🎥 Documentação Visual (Teste de Aceitação)
+Testes realizados utilizando as credenciais de homologação com sucesso.
+
+````carousel
+![Gravação em Vídeo do fluxo de aceitação](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/angular_20_acceptance_test_retry_1772156598865.webp)
+<!-- slide -->
+![Dashboard do Sistema migrado](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/dashboard_success_1772156701405.png)
+<!-- slide -->
+![Sidebar com os novos Lucide Icons](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/administrativo_module_1772156707054.png)
+````
+
 ---
 
 ## 👩‍💻 Próximos Passos (Para o Desenvolvedor)
