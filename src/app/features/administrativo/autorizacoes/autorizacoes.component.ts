@@ -9,7 +9,6 @@ import { Desbravador } from '../../../core/models/cadastros.model';
 
 @Component({
     selector: 'app-autorizacoes',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="page-container">

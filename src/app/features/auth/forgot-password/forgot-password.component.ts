@@ -6,7 +6,6 @@ import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
     selector: 'app-forgot-password',
-    standalone: true,
     imports: [CommonModule, ReactiveFormsModule, RouterLink],
     template: `
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">

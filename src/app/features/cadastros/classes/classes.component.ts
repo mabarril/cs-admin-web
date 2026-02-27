@@ -15,7 +15,6 @@ const CLASSES_PADRAO = [
 
 @Component({
     selector: 'app-classes',
-    standalone: true,
     imports: [CommonModule, ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">

@@ -5,10 +5,9 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ROLE_NAMES } from '../../../core/models/user-profile.model';
 
 @Component({
-  selector: 'app-header',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
+    selector: 'app-header',
+    imports: [CommonModule, RouterLink],
+    template: `
     <ng-container>
 
           <!-- User Menu -->
@@ -59,7 +58,7 @@ import { ROLE_NAMES } from '../../../core/models/user-profile.model';
           }
     </ng-container>
   `,
-  styles: []
+    styles: []
 })
 export class HeaderComponent {
   private authService = inject(AuthService);

@@ -5,10 +5,9 @@ import { CustoService } from '../services/custo.service';
 import { Custo, CustoForm, StatusCusto, STATUS_CUSTO_LABELS } from '../../../core/models/financeiro.model';
 
 @Component({
-  selector: 'app-custos',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `
+    selector: 'app-custos',
+    imports: [CommonModule, ReactiveFormsModule],
+    template: `
     <div class="p-6 space-y-6">
 
       <div class="flex items-center justify-between flex-wrap gap-4">

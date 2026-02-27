@@ -6,7 +6,6 @@ import { Ato } from '../administrativo.model';
 
 @Component({
     selector: 'app-atos',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="page-container">

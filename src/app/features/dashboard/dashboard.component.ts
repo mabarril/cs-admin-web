@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-dashboard',
+    imports: [CommonModule],
+    template: `
     <div class="p-6 space-y-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -76,6 +75,6 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
   `,
-  styles: []
+    styles: []
 })
 export class DashboardComponent { }

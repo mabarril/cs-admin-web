@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 
 @Component({
     selector: 'app-access-denied',
-    standalone: true,
     imports: [RouterLink],
     template: `
     <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">

@@ -6,7 +6,6 @@ import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model
 
 @Component({
     selector: 'app-patrimonio',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="page-container">

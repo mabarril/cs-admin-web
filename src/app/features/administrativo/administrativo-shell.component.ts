@@ -3,7 +3,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
     selector: 'app-administrativo-shell',
-    standalone: true,
     imports: [RouterOutlet, RouterLink, RouterLinkActive],
     template: `
     <div class="module-shell">

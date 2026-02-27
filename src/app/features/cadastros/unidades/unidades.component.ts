@@ -6,7 +6,6 @@ import { Unidade, UnidadeForm } from '../../../core/models/cadastros.model';
 
 @Component({
     selector: 'app-unidades',
-    standalone: true,
     imports: [CommonModule, ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">

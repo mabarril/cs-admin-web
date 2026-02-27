@@ -6,7 +6,6 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 
 @Component({
     selector: 'app-main-layout',
-    standalone: true,
     imports: [CommonModule, RouterOutlet, HeaderComponent, SidebarComponent],
     template: `
     <div class="min-h-screen bg-gray-50">

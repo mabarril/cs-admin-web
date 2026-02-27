@@ -45,10 +45,9 @@ const ALL_MENU_ITEMS: MenuItem[] = [
 ];
 
 @Component({
-  selector: 'app-sidebar',
-  standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
-  template: `
+    selector: 'app-sidebar',
+    imports: [CommonModule, RouterLink, RouterLinkActive],
+    template: `
     <aside class="w-64 bg-gray-900 text-white h-full flex flex-col">
       <div class="px-6 py-4 border-b border-gray-700">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Navegação</p>
@@ -71,7 +70,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
       </nav>
     </aside>
   `,
-  styles: []
+    styles: []
 })
 export class SidebarComponent {
   private authService = inject(AuthService);

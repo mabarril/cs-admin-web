@@ -11,10 +11,9 @@ import {
 import { Desbravador } from '../../../core/models/cadastros.model';
 
 @Component({
-  selector: 'app-mensalidades',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `
+    selector: 'app-mensalidades',
+    imports: [CommonModule, ReactiveFormsModule],
+    template: `
     <div class="p-6 space-y-6">
 
       <!-- Header -->

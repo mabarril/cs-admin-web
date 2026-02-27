@@ -5,10 +5,9 @@ import { CaixaService } from '../services/caixa.service';
 import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_LABELS } from '../../../core/models/financeiro.model';
 
 @Component({
-  selector: 'app-caixa',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `
+    selector: 'app-caixa',
+    imports: [CommonModule, ReactiveFormsModule],
+    template: `
     <div class="p-6 space-y-6">
 
       <div class="flex items-center justify-between flex-wrap gap-4">

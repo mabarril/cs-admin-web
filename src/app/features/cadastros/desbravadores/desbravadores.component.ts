@@ -8,7 +8,6 @@ import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS } from '..
 
 @Component({
     selector: 'app-desbravadores',
-    standalone: true,
     imports: [CommonModule, ReactiveFormsModule],
     template: `
     <div class="p-6 space-y-6">
