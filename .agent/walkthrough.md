@@ -1,54 +1,46 @@
-# Angular v20 Migration & Modernization Walkthrough
+# Walkthrough: Parametrização e IDs de Negócio Auto-incrementais
 
-## 🎯 Objetivo Concluído
-Migramos a aplicação de **Angular 18 para Angular 20**, implementamos o novo sistema de build (Application Builder), atualizamos os fluxos de controle no HTML (Control Flow Syntax) e avançamos na arquitetura utilizando **Signals** na gestão de estado (`AuthService` e `SidebarComponent`), além de implementar novos ícones profissionais com **Lucide Angular**.
+Nesta funcionalidade, a integridade dos dados foi aprimorada substituindo atributos textuais vulneráveis por listas tipadas restritas e blindando a edição de IDs sistêmicos por segurança e automação.
 
----
+## 🚀 Alterações Realizadas
 
-## 🚀 O Que Foi Feito
+### 1. Parametrização de Interfaces e Enums
+Vários campos que anteriormente aceitavam `strings` livres (como *"Mesa", "Portaria", "Diretor", "PIX"*) passaram a exigir valores predefinidos através de _Enums_ definidos no TypeScript. 
 
-### 1. Atualizações de Versão (Angular CLI e Core)
-A migração ocorreu em dois grandes saltos, conforme exige o Angular CLI, preservando o histórico de git limpo entre os passos:
-- `ng update @angular/core@19 @angular/cli@19` concluído com sucesso.
-- `ng update @angular/core@20 @angular/cli@20` concluído com sucesso.
+*   **Desbravadores** (`position`): Limitado para os cargos oficiais (Diretor, Conselheiro, etc).
+*   **Caixa e Finanças** (`payment_method`): Limitado para métodos conhecidos (PIX, Boleto, Dinheiro, etc).
+*   **Patrimônio** (`category`, `location`): Limitado para as áreas da organização (Acampamento, Cozinha, Sede, etc).
+*   **Atas e Atos** (`meeting_type`, `act_type`): Limitado para Reunião de Diretoria, Regular, Portaria, Resolução, etc.
 
-### 2. Modernizações no Build e Sintaxe
-- **Application Builder**: Migramos os projetos do antigo `@angular-devkit/build-angular:browser` para o novo sistema **Application Builder** (`@angular/build:application`), o que reduziu configurações obsoletas e melhorou o tempo de compilação.
-- **Control Flow Migration**: Convertemos toda a aplicação para usar a sintaxe de bloco de controle do Angular (`@if`, `@for`, `@switch`), substituindo diretivas estruturais antigas (`*ngIf`, `*ngFor`). Foram afetados componentes como: `Sidebar`, `Header`, `Login`, `Dashboard` e os módulos administrativos e de cadastros.
-- **Router Navigation**: Adaptamos para usar a sinalização interna de `Router.currentNavigation`.
-- **Budgets CSS Ajustados**: Corrigimos erros de estouro de tamanho de estilo nos componentes (como no módulo *Administrativo*) elevando o limite em `angular.json` para suportar adequadamente o escopo em Tailwind.
+🔄 **Impacto de UI:** Nos formulários de cadastro, os componentes `<input type="text">` destes campos foram substituídos por menus suspensos `<select>` gerados dinamicamente com as novas regras.
 
-### 3. Melhorias de Arquitetura e UX
-- **Signals State**: 
-  - `AuthService` e `ProfileService` já estavam atualizados para transitar seus estados localmente usando `signal()` e expondo de forma segura através do `.asReadonly()`.
-  - `SidebarComponent` foi validado utilizando `computed()` para construir os itens visíveis do menu de forma reativa atrelados ao role de permissões (`authService.hasAnyRole`).
-- **Novo pacote de Ícones (`Lucide-Angular`)**: O componente de navegação lateral (`SidebarComponent`) foi reescrito para abandonar SVGs hardcoded em favor dos ícones consistentes da biblioteca profissional **Lucide** (ex: `LayoutDashboard`, `Users`, `CircleDollarSign`, `ShieldAlert`, `LineChart`), alinhada ao estilo visual e tamanho limpo no DOM.
+### 2. IDs Auto-incrementais e Seguros
+*   **Desbravadores (`user_code`):** O formulário agora checa se o usuário está criando (campo habilitado) ou editando (campo `readonly` congelado).
+*   **Banco de Dados (PostgreSQL/Supabase):** Criada a migração `02_ajustes_schema.sql` contendo:
+    *   *Sequences* nativas para inteiros `meeting_number` e `act_number` (Atas/Atos).
+    *   *Sequence* + *Database Trigger* para geração dinâmica de strings formatadas `PAT-XXXX` toda vez que um novo `asset_code` nulo for tentado submeter no Patrimônio.
+*   **Frontend (Atas, Atos, Patrimônio):** Removidos/Desabilitados das telas os campos de digitação de Código, recebendo o aviso "Gerado Automaticamente" não enviando mais esse payload no momento do `.POST / .INSERT`.
 
----
+### 🗂️ Arquivos Modificados (Diffs Relevantes)
 
-## ✅ Verificações e Testes
-- ✅ O build compila perfeitamente sob TypeScript 5.8.
-- ✅ *Jest Builder*: O ambiente antigo do Karma (depreciado) precisava ser convertido; tentamos injetar o Jest, porém encontramos resistências dos schematics experimentais nas dependências. A aplicação foi entregue funcional na parte do build de render e isso pode ser testado com `npm start`.
+**Modelos de Domínio:** Configuração base das regras e `as const` arrays.
+*   `src/app/core/models/cadastros.model.ts`
+*   `src/app/core/models/financeiro.model.ts`
+*   `src/app/features/administrativo/administrativo.model.ts`
 
-### 🎥 Documentação Visual (Teste de Aceitação)
-Testes realizados utilizando as credenciais de homologação com sucesso.
+**Componentes Formulários (UI & Regras):** Substituição de TextInputs por Dropdowns (Selects) e Type Casting robusto.
+*   `src/app/features/cadastros/desbravadores/desbravadores.component.ts`
+*   `src/app/features/financeiro/caixa/caixa.component.ts`
+*   `src/app/features/administrativo/patrimonio/patrimonio.component.ts`
+*   `src/app/features/administrativo/atas/atas.component.ts`
+*   `src/app/features/administrativo/atos/atos.component.ts`
 
-````carousel
-![Gravação em Vídeo do fluxo de aceitação](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/angular_20_acceptance_test_retry_1772156598865.webp)
-<!-- slide -->
-![Dashboard do Sistema migrado](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/dashboard_success_1772156701405.png)
-<!-- slide -->
-![Sidebar com os novos Lucide Icons](C:/Users/barri/.gemini/antigravity/brain/ec78ffa8-b9dd-4013-9260-5135e07c011f/administrativo_module_1772156707054.png)
-````
+**Migrations (Backend):**
+*   [NEW] `supabase/migrations/02_ajustes_schema.sql`
 
----
-
-## 👩‍💻 Próximos Passos (Para o Desenvolvedor)
-O código está commitado e salvo remotamente na branch nova.
-Para verificar localmente (se ainda não o fez):
-```bash
-git checkout feature/angular-20-migration
-npm install
-npm run start
-```
-Após rever o comportamento na UI, você poderá abrir e aprovar o PR para a `develop`.
+## ✅ Como Validar (Verificação Manual)
+1. Antes de iniciar, garanta no seu terminal que as *sequences* e *triggers* estão aplicadas com: `supabase db reset`.
+2. Após o reset e rodar no `npm run start`, acesse "Atos" ou "Atas" ou "Patrimônio", clique em *Novo*, adicione dados mínimos sem um código.
+3. Observe as requisições na aba _Network_ / Banco de retornando o _ID sequencial_ ou do formato numérico desejado para o _asset_ (`PAT-0001`, `PAT-0002`).
+4. Verifique a tela de _Edição_ de desbravadores, notando que seu campo _Código_ está bloqueado com fundo cinza e impossível de re-escrever.
+5. Verifique a limitação de seleção nas categorias descritas no _Step 1_.
