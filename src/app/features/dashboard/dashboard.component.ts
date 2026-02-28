@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
-
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { DesbravadorService } from '../cadastros/services/desbravador.service';
+import { MensalidadeService } from '../financeiro/services/mensalidade.service';
+import { UnidadeService } from '../cadastros/services/unidade.service';
+import { PatrimonioService } from '../administrativo/patrimonio/patrimonio.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [],
+    imports: [CommonModule],
     template: `
     <div class="p-6 space-y-6">
       <div>
@@ -21,7 +26,13 @@ import { Component } from '@angular/core';
           </div>
           <div>
             <p class="text-sm text-gray-500">Desbravadores</p>
-            <p class="text-2xl font-bold text-gray-900">—</p>
+            <p class="text-2xl font-bold text-gray-900">
+              @if (loading()) {
+                <span class="animate-pulse w-8 h-8 bg-gray-200 rounded inline-block"></span>
+              } @else {
+                {{ desbravadoresCount() }}
+              }
+            </p>
           </div>
         </div>
 
@@ -34,7 +45,13 @@ import { Component } from '@angular/core';
           </div>
           <div>
             <p class="text-sm text-gray-500">Mensalidades Pendentes</p>
-            <p class="text-2xl font-bold text-gray-900">—</p>
+            <p class="text-2xl font-bold text-gray-900">
+              @if (loading()) {
+                <span class="animate-pulse w-8 h-8 bg-gray-200 rounded inline-block"></span>
+              } @else {
+                {{ mensalidadesPendentesCount() }}
+              }
+            </p>
           </div>
         </div>
 
@@ -47,7 +64,13 @@ import { Component } from '@angular/core';
           </div>
           <div>
             <p class="text-sm text-gray-500">Unidades</p>
-            <p class="text-2xl font-bold text-gray-900">—</p>
+            <p class="text-2xl font-bold text-gray-900">
+              @if (loading()) {
+                <span class="animate-pulse w-8 h-8 bg-gray-200 rounded inline-block"></span>
+              } @else {
+                {{ unidadesCount() }}
+              }
+            </p>
           </div>
         </div>
 
@@ -60,21 +83,62 @@ import { Component } from '@angular/core';
           </div>
           <div>
             <p class="text-sm text-gray-500">Patrimônio</p>
-            <p class="text-2xl font-bold text-gray-900">—</p>
+            <p class="text-2xl font-bold text-gray-900">
+              @if (loading()) {
+                <span class="animate-pulse w-8 h-8 bg-gray-200 rounded inline-block"></span>
+              } @else {
+                {{ patrimonioCount() }}
+              }
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Welcome card -->
       <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">Bem-vindo!</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Bem-vindo(a)!</h2>
         <p class="text-gray-500 text-sm">
-          Use o menu lateral para navegar entre os módulos disponíveis.
-          Os dados serão exibidos aqui conforme os módulos forem implementados.
+          Use o menu lateral para gerenciar as rotinas do clube.
         </p>
       </div>
     </div>
   `,
     styles: []
 })
-export class DashboardComponent { }
+export class DashboardComponent implements OnInit {
+  private desbravadorService = inject(DesbravadorService);
+  private mensalidadeService = inject(MensalidadeService);
+  private unidadeService = inject(UnidadeService);
+  private patrimonioService = inject(PatrimonioService);
+
+  desbravadoresCount = signal<number>(0);
+  mensalidadesPendentesCount = signal<number>(0);
+  unidadesCount = signal<number>(0);
+  patrimonioCount = signal<number>(0);
+  loading = signal<boolean>(true);
+
+  ngOnInit() {
+    this.carregarDados();
+  }
+
+  async carregarDados() {
+    this.loading.set(true);
+    try {
+      const [desbravadores, mensalidades, unidades, patrimonio] = await Promise.all([
+        firstValueFrom(this.desbravadorService.listar()),
+        firstValueFrom(this.mensalidadeService.listar({ status: 'pending' })),
+        firstValueFrom(this.unidadeService.listar()),
+        this.patrimonioService.listar()
+      ]);
+
+      this.desbravadoresCount.set(desbravadores.length);
+      this.mensalidadesPendentesCount.set(mensalidades.length);
+      this.unidadesCount.set(unidades.length);
+      this.patrimonioCount.set(patrimonio.length);
+    } catch (err) {
+      console.error('Erro ao carregar dados do dashboard', err);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+}

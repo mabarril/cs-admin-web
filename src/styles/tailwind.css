@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Conversão visual para inputs e textareas gerais - campos com exclusão estão excluídos no seletor */
+  input[type="text"], textarea {
+    text-transform: uppercase;
+  }
+
+  /* Impede a capitalização de types que não merecem upper-case para garantir clareza visual */
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="number"],
+  input[type="tel"] {
+     text-transform: none;
+  }
+}
+
 /* Variáveis CSS personalizadas */
 :root {
   --color-primary: 37 99 235;

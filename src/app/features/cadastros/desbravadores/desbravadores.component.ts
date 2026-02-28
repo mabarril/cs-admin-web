@@ -5,10 +5,11 @@ import { DesbravadorService } from '../services/desbravador.service';
 import { UnidadeService } from '../services/unidade.service';
 import { ClasseService } from '../services/classe.service';
 import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS } from '../../../core/models/cadastros.model';
+import { UppercaseDirective } from '../../../shared/directives/uppercase.directive';
 
 @Component({
     selector: 'app-desbravadores',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, UppercaseDirective],
     template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">
@@ -100,7 +101,7 @@ import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS } from '..
           <form [formGroup]="form" (ngSubmit)="salvar()" class="p-6 space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo <span class="text-red-500">*</span></label>
-              <input formControlName="full_name" type="text" placeholder="Nome do desbravador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input formControlName="full_name" appUppercase type="text" placeholder="Nome do desbravador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
