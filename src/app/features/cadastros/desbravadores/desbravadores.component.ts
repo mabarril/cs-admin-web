@@ -4,13 +4,13 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DesbravadorService } from '../services/desbravador.service';
 import { UnidadeService } from '../services/unidade.service';
 import { ClasseService } from '../services/classe.service';
-import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS } from '../../../core/models/cadastros.model';
+import { Desbravador, DesbravadorForm, Unidade, Classe, GENERO_LABELS, CARGOS, Cargo } from '../../../core/models/cadastros.model';
 import { UppercaseDirective } from '../../../shared/directives/uppercase.directive';
 
 @Component({
-    selector: 'app-desbravadores',
-    imports: [ReactiveFormsModule, UppercaseDirective],
-    template: `
+  selector: 'app-desbravadores',
+  imports: [ReactiveFormsModule, UppercaseDirective],
+  template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">
         <div>
@@ -140,11 +140,16 @@ import { UppercaseDirective } from '../../../shared/directives/uppercase.directi
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
-                <input formControlName="user_code" type="text" placeholder="Ex: DSB-001" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input formControlName="user_code" type="text" [readonly]="!!editando()" [class.bg-gray-100]="!!editando()" placeholder="Ex: DSB-001" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Cargo/Função</label>
-                <input formControlName="position" type="text" placeholder="Ex: Capitão" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <select formControlName="position" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="">Selecione um cargo</option>
+                  @for (c of cargos; track c) {
+                    <option [value]="c">{{ c }}</option>
+                  }
+                </select>
               </div>
             </div>
             @if (erro()) {
@@ -183,105 +188,106 @@ import { UppercaseDirective } from '../../../shared/directives/uppercase.directi
   `
 })
 export class DesbravadoresComponent implements OnInit {
-    readonly service = inject(DesbravadorService);
-    private unidadeService = inject(UnidadeService);
-    private classeService = inject(ClasseService);
-    private fb = inject(FormBuilder);
+  readonly service = inject(DesbravadorService);
+  readonly cargos = CARGOS;
+  private unidadeService = inject(UnidadeService);
+  private classeService = inject(ClasseService);
+  private fb = inject(FormBuilder);
 
-    readonly desbravadores = signal<Desbravador[]>([]);
-    readonly unidades = signal<Unidade[]>([]);
-    readonly classesDisponiveis = signal<Classe[]>([]);
-    readonly loading = signal(true);
-    readonly modalAberto = signal(false);
-    readonly salvando = signal(false);
-    readonly erro = signal<string | null>(null);
-    readonly editando = signal<Desbravador | null>(null);
-    readonly desbravadorParaExcluir = signal<Desbravador | null>(null);
+  readonly desbravadores = signal<Desbravador[]>([]);
+  readonly unidades = signal<Unidade[]>([]);
+  readonly classesDisponiveis = signal<Classe[]>([]);
+  readonly loading = signal(true);
+  readonly modalAberto = signal(false);
+  readonly salvando = signal(false);
+  readonly erro = signal<string | null>(null);
+  readonly editando = signal<Desbravador | null>(null);
+  readonly desbravadorParaExcluir = signal<Desbravador | null>(null);
 
-    form = this.fb.group({
-        full_name: ['', Validators.required],
-        birth_date: ['', Validators.required],
-        gender: [''],
-        unit_id: [''],
-        class_id: [''],
-        user_code: [''],
-        position: ['']
+  form = this.fb.group({
+    full_name: ['', Validators.required],
+    birth_date: ['', Validators.required],
+    gender: [''],
+    unit_id: [''],
+    class_id: [''],
+    user_code: [''],
+    position: ['']
+  });
+
+  ngOnInit(): void {
+    this.carregar();
+    this.unidadeService.listar().subscribe(u => this.unidades.set(u));
+    this.classeService.listar().subscribe(c => this.classesDisponiveis.set(c));
+  }
+
+  carregar(): void {
+    this.loading.set(true);
+    this.service.listar().subscribe(data => {
+      this.desbravadores.set(data);
+      this.loading.set(false);
     });
+  }
 
-    ngOnInit(): void {
-        this.carregar();
-        this.unidadeService.listar().subscribe(u => this.unidades.set(u));
-        this.classeService.listar().subscribe(c => this.classesDisponiveis.set(c));
-    }
+  abrirFormulario(d?: Desbravador): void {
+    this.editando.set(d ?? null);
+    this.erro.set(null);
+    this.form.reset({
+      full_name: d?.full_name ?? '',
+      birth_date: d?.birth_date ?? '',
+      gender: d?.gender ?? '',
+      unit_id: d?.unit_id ?? '',
+      class_id: d?.class_id ?? '',
+      user_code: d?.user_code ?? '',
+      position: d?.position ?? ''
+    });
+    this.modalAberto.set(true);
+  }
 
-    carregar(): void {
-        this.loading.set(true);
-        this.service.listar().subscribe(data => {
-            this.desbravadores.set(data);
-            this.loading.set(false);
-        });
-    }
+  fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
 
-    abrirFormulario(d?: Desbravador): void {
-        this.editando.set(d ?? null);
-        this.erro.set(null);
-        this.form.reset({
-            full_name: d?.full_name ?? '',
-            birth_date: d?.birth_date ?? '',
-            gender: d?.gender ?? '',
-            unit_id: d?.unit_id ?? '',
-            class_id: d?.class_id ?? '',
-            user_code: d?.user_code ?? '',
-            position: d?.position ?? ''
-        });
-        this.modalAberto.set(true);
-    }
+  salvar(): void {
+    if (this.form.invalid) return;
+    this.salvando.set(true);
+    this.erro.set(null);
+    const raw = this.form.value;
+    const formValue: DesbravadorForm = {
+      full_name: raw.full_name!,
+      birth_date: raw.birth_date!,
+      gender: (raw.gender as any) || undefined,
+      unit_id: raw.unit_id || undefined,
+      class_id: raw.class_id || undefined,
+      user_code: raw.user_code || undefined,
+      position: (raw.position as Cargo) || undefined,
+    };
+    const editando = this.editando();
+    const obs = editando
+      ? this.service.atualizar(editando.id, formValue)
+      : this.service.criar(formValue);
+    obs.subscribe(result => {
+      this.salvando.set(false);
+      if (result) { this.fecharFormulario(); this.carregar(); }
+      else this.erro.set('Erro ao salvar. Tente novamente.');
+    });
+  }
 
-    fecharFormulario(): void { this.modalAberto.set(false); this.editando.set(null); }
+  getInitials(fullName: string): string {
+    return fullName
+      .split(' ')
+      .filter(n => n.length > 0)
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  }
 
-    salvar(): void {
-        if (this.form.invalid) return;
-        this.salvando.set(true);
-        this.erro.set(null);
-        const raw = this.form.value;
-        const formValue: DesbravadorForm = {
-            full_name: raw.full_name!,
-            birth_date: raw.birth_date!,
-            gender: (raw.gender as any) || undefined,
-            unit_id: raw.unit_id || undefined,
-            class_id: raw.class_id || undefined,
-            user_code: raw.user_code || undefined,
-            position: raw.position || undefined,
-        };
-        const editando = this.editando();
-        const obs = editando
-            ? this.service.atualizar(editando.id, formValue)
-            : this.service.criar(formValue);
-        obs.subscribe(result => {
-            this.salvando.set(false);
-            if (result) { this.fecharFormulario(); this.carregar(); }
-            else this.erro.set('Erro ao salvar. Tente novamente.');
-        });
-    }
+  confirmarExclusao(d: Desbravador): void { this.desbravadorParaExcluir.set(d); }
 
-    getInitials(fullName: string): string {
-        return fullName
-            .split(' ')
-            .filter(n => n.length > 0)
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
-    }
-
-    confirmarExclusao(d: Desbravador): void { this.desbravadorParaExcluir.set(d); }
-
-    excluir(): void {
-        const d = this.desbravadorParaExcluir();
-        if (!d) return;
-        this.service.excluir(d.id).subscribe(ok => {
-            this.desbravadorParaExcluir.set(null);
-            if (ok) this.carregar();
-        });
-    }
+  excluir(): void {
+    const d = this.desbravadorParaExcluir();
+    if (!d) return;
+    this.service.excluir(d.id).subscribe(ok => {
+      this.desbravadorParaExcluir.set(null);
+      if (ok) this.carregar();
+    });
+  }
 }

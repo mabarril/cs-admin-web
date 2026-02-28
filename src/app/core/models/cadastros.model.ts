@@ -29,12 +29,18 @@ export type ClasseForm = Pick<Classe, 'name' | 'color_hex' | 'order_index'>;
 
 // --- Desbravador ---
 export type Genero = 'male' | 'female';
+export const CARGOS = [
+    'Diretor', 'Diretor Associado', 'Secretário', 'Tesoureiro',
+    'Instrutor', 'Conselheiro', 'Conselheiro Associado',
+    'Capitão', 'Secretário de Unidade', 'Desbravador'
+] as const;
+export type Cargo = typeof CARGOS[number];
 
 export interface Desbravador {
     id: string;
     user_code?: string;
     full_name: string;
-    position?: string;
+    position?: Cargo;
     birth_date: string;
     gender?: Genero;
     unit_id?: string;

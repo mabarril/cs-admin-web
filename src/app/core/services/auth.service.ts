@@ -73,9 +73,9 @@ export class AuthService {
     /**
      * Cria uma nova conta de usuário.
      */
-    async signUp(email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> {
+    async signUp(email: string, password: string, fullName: string, role: UserRole): Promise<{ success: boolean; error?: string }> {
         try {
-            await this.supabase.signUp(email, password, { full_name: fullName });
+            await this.supabase.signUp(email, password, { full_name: fullName, role });
             return {
                 success: true,
                 error: 'Conta criada! Aguarde aprovação do administrador para acessar o sistema.'

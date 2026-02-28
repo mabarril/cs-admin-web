@@ -2,12 +2,12 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AtaService } from './ata.service';
-import { Ata } from '../administrativo.model';
+import { Ata, MEETING_TYPES } from '../administrativo.model';
 
 @Component({
-    selector: 'app-atas',
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-atas',
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="page-container">
       <div class="page-header">
         <div>
@@ -84,7 +84,7 @@ import { Ata } from '../administrativo.model';
             <div class="form-row">
               <div class="form-group">
                 <label>Número da Ata *</label>
-                <input class="form-control" type="number" name="meeting_number" [(ngModel)]="form.meeting_number" required placeholder="1" />
+                <input class="form-control" type="number" name="meeting_number" [(ngModel)]="form.meeting_number" disabled placeholder="(Auto)" />
               </div>
               <div class="form-group">
                 <label>Data da Reunião *</label>
@@ -94,7 +94,12 @@ import { Ata } from '../administrativo.model';
             <div class="form-row">
               <div class="form-group">
                 <label>Tipo de Reunião</label>
-                <input class="form-control" name="meeting_type" [(ngModel)]="form.meeting_type" placeholder="Ex: Diretoria, Conselho..." />
+                <select class="form-control" name="meeting_type" [(ngModel)]="form.meeting_type">
+                  <option value="">Selecione o tipo de reunião...</option>
+                  @for (t of meetingTypes; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
               </div>
               <div class="form-group">
                 <label>Título *</label>
@@ -141,7 +146,7 @@ import { Ata } from '../administrativo.model';
       </div>
     }
   `,
-    styles: [`
+  styles: [`
     .page-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
     .page-title { font-size: 1.75rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0 0 0.25rem; }
@@ -205,91 +210,92 @@ import { Ata } from '../administrativo.model';
   `]
 })
 export class AtasComponent implements OnInit {
-    private svc = inject(AtaService);
+  readonly meetingTypes = MEETING_TYPES;
+  private svc = inject(AtaService);
 
-    items = signal<Ata[]>([]);
-    carregando = signal(false);
-    erro = signal<string | null>(null);
-    modalAberto = signal(false);
-    salvando = signal(false);
-    erroModal = signal<string | null>(null);
-    itemEditando = signal<Ata | null>(null);
-    itemParaExcluir = signal<Ata | null>(null);
-    excluindo = signal(false);
+  items = signal<Ata[]>([]);
+  carregando = signal(false);
+  erro = signal<string | null>(null);
+  modalAberto = signal(false);
+  salvando = signal(false);
+  erroModal = signal<string | null>(null);
+  itemEditando = signal<Ata | null>(null);
+  itemParaExcluir = signal<Ata | null>(null);
+  excluindo = signal(false);
 
-    form: Partial<Ata> = this.formVazio();
-    attendeesRaw = '';
+  form: any = this.formVazio();
+  attendeesRaw = '';
 
-    formVazio(): Partial<Ata> {
-        return { meeting_number: undefined, meeting_date: '', meeting_type: '', title: '', content: '' };
+  formVazio(): any {
+    return { meeting_number: undefined, meeting_date: '', meeting_type: '' as any, title: '', content: '' };
+  }
+
+  async ngOnInit() { await this.carregar(); }
+
+  async carregar() {
+    this.carregando.set(true);
+    this.erro.set(null);
+    try {
+      this.items.set(await this.svc.listar());
+    } catch {
+      this.erro.set('Erro ao carregar atas.');
+    } finally {
+      this.carregando.set(false);
     }
+  }
 
-    async ngOnInit() { await this.carregar(); }
+  abrirModal(item?: Ata) {
+    this.itemEditando.set(item ?? null);
+    this.form = item ? { ...item } : this.formVazio();
+    this.attendeesRaw = item?.attendees?.join(', ') ?? '';
+    this.erroModal.set(null);
+    this.modalAberto.set(true);
+  }
 
-    async carregar() {
-        this.carregando.set(true);
-        this.erro.set(null);
-        try {
-            this.items.set(await this.svc.listar());
-        } catch {
-            this.erro.set('Erro ao carregar atas.');
-        } finally {
-            this.carregando.set(false);
-        }
+  fecharModal() {
+    this.modalAberto.set(false);
+    this.itemEditando.set(null);
+  }
+
+  async salvar() {
+    this.salvando.set(true);
+    this.erroModal.set(null);
+    try {
+      const payload: Partial<Ata> = {
+        ...this.form,
+        attendees: this.attendeesRaw
+          ? this.attendeesRaw.split(',').map(s => s.trim()).filter(Boolean)
+          : [],
+      };
+      const id = this.itemEditando()?.id;
+      if (id) {
+        await this.svc.atualizar(id, payload);
+      } else {
+        await this.svc.criar(payload as Omit<Ata, 'id' | 'created_at' | 'updated_at'>);
+      }
+      await this.carregar();
+      this.fecharModal();
+    } catch {
+      this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
+    } finally {
+      this.salvando.set(false);
     }
+  }
 
-    abrirModal(item?: Ata) {
-        this.itemEditando.set(item ?? null);
-        this.form = item ? { ...item } : this.formVazio();
-        this.attendeesRaw = item?.attendees?.join(', ') ?? '';
-        this.erroModal.set(null);
-        this.modalAberto.set(true);
+  confirmarExclusao(item: Ata) { this.itemParaExcluir.set(item); }
+
+  async excluir() {
+    const item = this.itemParaExcluir();
+    if (!item?.id) return;
+    this.excluindo.set(true);
+    try {
+      await this.svc.excluir(item.id);
+      await this.carregar();
+      this.itemParaExcluir.set(null);
+    } catch {
+      this.erro.set('Erro ao excluir ata.');
+    } finally {
+      this.excluindo.set(false);
     }
-
-    fecharModal() {
-        this.modalAberto.set(false);
-        this.itemEditando.set(null);
-    }
-
-    async salvar() {
-        this.salvando.set(true);
-        this.erroModal.set(null);
-        try {
-            const payload: Partial<Ata> = {
-                ...this.form,
-                attendees: this.attendeesRaw
-                    ? this.attendeesRaw.split(',').map(s => s.trim()).filter(Boolean)
-                    : [],
-            };
-            const id = this.itemEditando()?.id;
-            if (id) {
-                await this.svc.atualizar(id, payload);
-            } else {
-                await this.svc.criar(payload as Omit<Ata, 'id' | 'created_at' | 'updated_at'>);
-            }
-            await this.carregar();
-            this.fecharModal();
-        } catch {
-            this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
-        } finally {
-            this.salvando.set(false);
-        }
-    }
-
-    confirmarExclusao(item: Ata) { this.itemParaExcluir.set(item); }
-
-    async excluir() {
-        const item = this.itemParaExcluir();
-        if (!item?.id) return;
-        this.excluindo.set(true);
-        try {
-            await this.svc.excluir(item.id);
-            await this.carregar();
-            this.itemParaExcluir.set(null);
-        } catch {
-            this.erro.set('Erro ao excluir ata.');
-        } finally {
-            this.excluindo.set(false);
-        }
-    }
+  }
 }

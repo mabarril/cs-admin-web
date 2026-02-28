@@ -55,6 +55,11 @@ export const TIPO_LANCAMENTO_LABELS: Record<TipoLancamento, string> = {
     expense: 'Saída'
 };
 
+export const FORMAS_PAGAMENTO = [
+    'PIX', 'Dinheiro', 'Transferência Bancária', 'Boleto', 'Cartão de Crédito', 'Cartão de Débito'
+] as const;
+export type FormaPagamento = typeof FORMAS_PAGAMENTO[number];
+
 export interface LancamentoCaixa {
     id: string;
     transaction_date: string;   // DATE
@@ -62,7 +67,7 @@ export interface LancamentoCaixa {
     category_id?: string;
     type: TipoLancamento;
     amount: number;
-    payment_method?: string;
+    payment_method?: FormaPagamento;
     notes?: string;
     created_by?: string;
     created_at: string;
@@ -76,7 +81,7 @@ export interface LancamentoCaixaForm {
     description: string;
     type: TipoLancamento;
     amount: number;
-    payment_method?: string;
+    payment_method?: FormaPagamento;
     notes?: string;
     category_id?: string;
 }

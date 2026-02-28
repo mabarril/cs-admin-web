@@ -2,12 +2,12 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AtoService } from './ato.service';
-import { Ato } from '../administrativo.model';
+import { Ato, ACT_TYPES } from '../administrativo.model';
 
 @Component({
-    selector: 'app-atos',
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-atos',
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="page-container">
       <div class="page-header">
         <div>
@@ -76,7 +76,7 @@ import { Ato } from '../administrativo.model';
             <div class="form-row">
               <div class="form-group">
                 <label>Número do Ato *</label>
-                <input class="form-control" type="number" name="act_number" [(ngModel)]="form.act_number" required placeholder="1" />
+                <input class="form-control" type="number" name="act_number" [(ngModel)]="form.act_number" disabled placeholder="(Auto)" />
               </div>
               <div class="form-group">
                 <label>Data *</label>
@@ -86,7 +86,12 @@ import { Ato } from '../administrativo.model';
             <div class="form-row">
               <div class="form-group">
                 <label>Tipo do Ato</label>
-                <input class="form-control" name="act_type" [(ngModel)]="form.act_type" placeholder="Ex: Portaria, Resolução..." />
+                <select class="form-control" name="act_type" [(ngModel)]="form.act_type">
+                  <option value="">Selecione o tipo de ato...</option>
+                  @for (t of actTypes; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
               </div>
               <div class="form-group">
                 <label>Título *</label>
@@ -129,7 +134,7 @@ import { Ato } from '../administrativo.model';
       </div>
     }
   `,
-    styles: [`
+  styles: [`
     .page-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
     .page-title { font-size: 1.75rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0 0 0.25rem; }
@@ -188,83 +193,84 @@ import { Ato } from '../administrativo.model';
   `]
 })
 export class AtosComponent implements OnInit {
-    private svc = inject(AtoService);
+  readonly actTypes = ACT_TYPES;
+  private svc = inject(AtoService);
 
-    items = signal<Ato[]>([]);
-    carregando = signal(false);
-    erro = signal<string | null>(null);
-    modalAberto = signal(false);
-    salvando = signal(false);
-    erroModal = signal<string | null>(null);
-    itemEditando = signal<Ato | null>(null);
-    itemParaExcluir = signal<Ato | null>(null);
-    excluindo = signal(false);
+  items = signal<Ato[]>([]);
+  carregando = signal(false);
+  erro = signal<string | null>(null);
+  modalAberto = signal(false);
+  salvando = signal(false);
+  erroModal = signal<string | null>(null);
+  itemEditando = signal<Ato | null>(null);
+  itemParaExcluir = signal<Ato | null>(null);
+  excluindo = signal(false);
 
-    form: Partial<Ato> = this.formVazio();
+  form: any = this.formVazio();
 
-    formVazio(): Partial<Ato> {
-        return { act_number: undefined, act_date: '', act_type: '', title: '', content: '' };
+  formVazio(): any {
+    return { act_number: undefined, act_date: '', act_type: '' as any, title: '', content: '' };
+  }
+
+  async ngOnInit() { await this.carregar(); }
+
+  async carregar() {
+    this.carregando.set(true);
+    this.erro.set(null);
+    try {
+      this.items.set(await this.svc.listar());
+    } catch {
+      this.erro.set('Erro ao carregar atos.');
+    } finally {
+      this.carregando.set(false);
     }
+  }
 
-    async ngOnInit() { await this.carregar(); }
+  abrirModal(item?: Ato) {
+    this.itemEditando.set(item ?? null);
+    this.form = item ? { ...item } : this.formVazio();
+    this.erroModal.set(null);
+    this.modalAberto.set(true);
+  }
 
-    async carregar() {
-        this.carregando.set(true);
-        this.erro.set(null);
-        try {
-            this.items.set(await this.svc.listar());
-        } catch {
-            this.erro.set('Erro ao carregar atos.');
-        } finally {
-            this.carregando.set(false);
-        }
+  fecharModal() {
+    this.modalAberto.set(false);
+    this.itemEditando.set(null);
+  }
+
+  async salvar() {
+    this.salvando.set(true);
+    this.erroModal.set(null);
+    try {
+      const id = this.itemEditando()?.id;
+      if (id) {
+        await this.svc.atualizar(id, this.form);
+      } else {
+        await this.svc.criar(this.form as Omit<Ato, 'id' | 'created_at' | 'updated_at'>);
+      }
+      await this.carregar();
+      this.fecharModal();
+    } catch {
+      this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
+    } finally {
+      this.salvando.set(false);
     }
+  }
 
-    abrirModal(item?: Ato) {
-        this.itemEditando.set(item ?? null);
-        this.form = item ? { ...item } : this.formVazio();
-        this.erroModal.set(null);
-        this.modalAberto.set(true);
+  confirmarExclusao(item: Ato) { this.itemParaExcluir.set(item); }
+
+  async excluir() {
+    const item = this.itemParaExcluir();
+    if (!item?.id) return;
+    this.excluindo.set(true);
+    try {
+      await this.svc.excluir(item.id);
+      await this.carregar();
+      this.itemParaExcluir.set(null);
+    } catch {
+      this.erro.set('Erro ao excluir ato.');
+    } finally {
+      this.excluindo.set(false);
     }
-
-    fecharModal() {
-        this.modalAberto.set(false);
-        this.itemEditando.set(null);
-    }
-
-    async salvar() {
-        this.salvando.set(true);
-        this.erroModal.set(null);
-        try {
-            const id = this.itemEditando()?.id;
-            if (id) {
-                await this.svc.atualizar(id, this.form);
-            } else {
-                await this.svc.criar(this.form as Omit<Ato, 'id' | 'created_at' | 'updated_at'>);
-            }
-            await this.carregar();
-            this.fecharModal();
-        } catch {
-            this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
-        } finally {
-            this.salvando.set(false);
-        }
-    }
-
-    confirmarExclusao(item: Ato) { this.itemParaExcluir.set(item); }
-
-    async excluir() {
-        const item = this.itemParaExcluir();
-        if (!item?.id) return;
-        this.excluindo.set(true);
-        try {
-            await this.svc.excluir(item.id);
-            await this.carregar();
-            this.itemParaExcluir.set(null);
-        } catch {
-            this.erro.set('Erro ao excluir ato.');
-        } finally {
-            this.excluindo.set(false);
-        }
-    }
+  }
 }

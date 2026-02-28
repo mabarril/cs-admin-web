@@ -2,12 +2,12 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PatrimonioService } from './patrimonio.service';
-import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model';
+import { Asset, AssetStatus, ASSET_STATUS_LABELS, ASSET_CATEGORIES, ASSET_LOCATIONS } from '../administrativo.model';
 
 @Component({
-    selector: 'app-patrimonio',
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-patrimonio',
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="page-container">
       <div class="page-header">
         <div>
@@ -98,7 +98,7 @@ import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model
             <div class="form-row">
               <div class="form-group">
                 <label>Código *</label>
-                <input class="form-control" name="asset_code" [(ngModel)]="form.asset_code" required placeholder="PAT-001" />
+                <input class="form-control" name="asset_code" [(ngModel)]="form.asset_code" disabled placeholder="(Gerado auto)" />
               </div>
               <div class="form-group">
                 <label>Status</label>
@@ -117,11 +117,21 @@ import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model
             <div class="form-row">
               <div class="form-group">
                 <label>Categoria</label>
-                <input class="form-control" name="category" [(ngModel)]="form.category" placeholder="Ex: Equipamento, Mobiliário..." />
+                <select class="form-control" name="category" [(ngModel)]="form.category">
+                  <option value="">Selecione a categoria...</option>
+                  @for (c of categories; track c) {
+                    <option [value]="c">{{ c }}</option>
+                  }
+                </select>
               </div>
               <div class="form-group">
                 <label>Localização</label>
-                <input class="form-control" name="location" [(ngModel)]="form.location" placeholder="Sala, armário..." />
+                <select class="form-control" name="location" [(ngModel)]="form.location">
+                  <option value="">Selecione a localização...</option>
+                  @for (loc of locations; track loc) {
+                    <option [value]="loc">{{ loc }}</option>
+                  }
+                </select>
               </div>
             </div>
             <div class="form-row">
@@ -178,7 +188,7 @@ import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model
       </div>
     }
   `,
-    styles: [`
+  styles: [`
     .page-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
     .page-title { font-size: 1.75rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0 0 0.25rem; }
@@ -245,100 +255,102 @@ import { Asset, AssetStatus, ASSET_STATUS_LABELS } from '../administrativo.model
   `]
 })
 export class PatrimonioComponent implements OnInit {
-    private svc = inject(PatrimonioService);
+  private svc = inject(PatrimonioService);
+  readonly categories = ASSET_CATEGORIES;
+  readonly locations = ASSET_LOCATIONS;
 
-    items = signal<Asset[]>([]);
-    itensFiltrados = signal<Asset[]>([]);
-    carregando = signal(false);
-    erro = signal<string | null>(null);
-    modalAberto = signal(false);
-    salvando = signal(false);
-    erroModal = signal<string | null>(null);
-    itemEditando = signal<Asset | null>(null);
-    itemParaExcluir = signal<Asset | null>(null);
-    excluindo = signal(false);
-    filtroStatus = '';
+  items = signal<Asset[]>([]);
+  itensFiltrados = signal<Asset[]>([]);
+  carregando = signal(false);
+  erro = signal<string | null>(null);
+  modalAberto = signal(false);
+  salvando = signal(false);
+  erroModal = signal<string | null>(null);
+  itemEditando = signal<Asset | null>(null);
+  itemParaExcluir = signal<Asset | null>(null);
+  excluindo = signal(false);
+  filtroStatus = '';
 
-    form: Partial<Asset> = this.formVazio();
+  form: any = this.formVazio();
 
-    formVazio(): Partial<Asset> {
-        return { asset_code: '', name: '', status: 'active', category: '', location: '', description: '', notes: '', acquisition_date: '', acquisition_value: undefined, current_value: undefined };
+  formVazio(): any {
+    return { asset_code: '', name: '', status: 'active', category: '' as any, location: '' as any, description: '', notes: '', acquisition_date: '', acquisition_value: undefined, current_value: undefined };
+  }
+
+  statusLabel(status?: AssetStatus | string) {
+    return ASSET_STATUS_LABELS[(status as AssetStatus)] ?? status ?? '—';
+  }
+
+  async ngOnInit() {
+    await this.carregar();
+  }
+
+  async carregar() {
+    this.carregando.set(true);
+    this.erro.set(null);
+    try {
+      const data = await this.svc.listar();
+      this.items.set(data);
+      this.aplicarFiltro();
+    } catch {
+      this.erro.set('Erro ao carregar patrimônio.');
+    } finally {
+      this.carregando.set(false);
     }
+  }
 
-    statusLabel(status?: AssetStatus | string) {
-        return ASSET_STATUS_LABELS[(status as AssetStatus)] ?? status ?? '—';
-    }
+  aplicarFiltro() {
+    const all = this.items();
+    this.itensFiltrados.set(this.filtroStatus ? all.filter(i => i.status === this.filtroStatus) : all);
+  }
 
-    async ngOnInit() {
-        await this.carregar();
-    }
+  abrirModal(item?: Asset) {
+    this.itemEditando.set(item ?? null);
+    this.form = item ? { ...item } : this.formVazio();
+    this.erroModal.set(null);
+    this.modalAberto.set(true);
+  }
 
-    async carregar() {
-        this.carregando.set(true);
-        this.erro.set(null);
-        try {
-            const data = await this.svc.listar();
-            this.items.set(data);
-            this.aplicarFiltro();
-        } catch {
-            this.erro.set('Erro ao carregar patrimônio.');
-        } finally {
-            this.carregando.set(false);
-        }
-    }
+  fecharModal() {
+    this.modalAberto.set(false);
+    this.itemEditando.set(null);
+  }
 
-    aplicarFiltro() {
-        const all = this.items();
-        this.itensFiltrados.set(this.filtroStatus ? all.filter(i => i.status === this.filtroStatus) : all);
+  async salvar() {
+    this.salvando.set(true);
+    this.erroModal.set(null);
+    try {
+      const id = this.itemEditando()?.id;
+      if (id) {
+        await this.svc.atualizar(id, this.form);
+      } else {
+        await this.svc.criar(this.form as Omit<Asset, 'id' | 'created_at' | 'updated_at'>);
+      }
+      await this.carregar();
+      this.fecharModal();
+    } catch {
+      this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
+    } finally {
+      this.salvando.set(false);
     }
+  }
 
-    abrirModal(item?: Asset) {
-        this.itemEditando.set(item ?? null);
-        this.form = item ? { ...item } : this.formVazio();
-        this.erroModal.set(null);
-        this.modalAberto.set(true);
-    }
+  confirmarExclusao(item: Asset) {
+    this.itemParaExcluir.set(item);
+  }
 
-    fecharModal() {
-        this.modalAberto.set(false);
-        this.itemEditando.set(null);
+  async excluir() {
+    const item = this.itemParaExcluir();
+    if (!item?.id) return;
+    this.excluindo.set(true);
+    try {
+      await this.svc.excluir(item.id);
+      await this.carregar();
+      this.itemParaExcluir.set(null);
+    } catch {
+      this.erro.set('Erro ao excluir bem.');
+    } finally {
+      this.excluindo.set(false);
     }
-
-    async salvar() {
-        this.salvando.set(true);
-        this.erroModal.set(null);
-        try {
-            const id = this.itemEditando()?.id;
-            if (id) {
-                await this.svc.atualizar(id, this.form);
-            } else {
-                await this.svc.criar(this.form as Omit<Asset, 'id' | 'created_at' | 'updated_at'>);
-            }
-            await this.carregar();
-            this.fecharModal();
-        } catch {
-            this.erroModal.set('Erro ao salvar. Verifique os dados e tente novamente.');
-        } finally {
-            this.salvando.set(false);
-        }
-    }
-
-    confirmarExclusao(item: Asset) {
-        this.itemParaExcluir.set(item);
-    }
-
-    async excluir() {
-        const item = this.itemParaExcluir();
-        if (!item?.id) return;
-        this.excluindo.set(true);
-        try {
-            await this.svc.excluir(item.id);
-            await this.carregar();
-            this.itemParaExcluir.set(null);
-        } catch {
-            this.erro.set('Erro ao excluir bem.');
-        } finally {
-            this.excluindo.set(false);
-        }
-    }
+  }
 }

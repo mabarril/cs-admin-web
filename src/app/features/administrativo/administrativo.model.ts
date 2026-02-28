@@ -6,6 +6,12 @@
 // PATRIMÔNIO (assets)
 // ----------------------
 
+export const ASSET_CATEGORIES = ['Acampamento', 'Cozinha', 'Escritório', 'Uniformes', 'Materiais Esportivos', 'Banda/Fanfarra', 'Ferramentas'] as const;
+export type AssetCategory = typeof ASSET_CATEGORIES[number];
+
+export const ASSET_LOCATIONS = ['Sede (Igreja)', 'Almoxarifado', 'Com um membro (Empréstimo)'] as const;
+export type AssetLocation = typeof ASSET_LOCATIONS[number];
+
 export type AssetStatus = 'active' | 'maintenance' | 'inactive' | 'disposed';
 
 export interface Asset {
@@ -13,12 +19,12 @@ export interface Asset {
   asset_code: string;
   name: string;
   description?: string;
-  category?: string;
+  category?: AssetCategory;
   acquisition_date?: string;       // DATE → ISO string
   acquisition_value?: number;
   current_value?: number;
   status?: AssetStatus;
-  location?: string;
+  location?: AssetLocation;
   responsible_id?: string;         // FK → user_profiles.id
   notes?: string;
   created_at?: string;
@@ -36,11 +42,14 @@ export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {
 // ATAS (minutes)
 // ----------------------
 
+export const MEETING_TYPES = ['Reunião Regular (Clube)', 'Reunião de Diretoria', 'Reunião de Pais e Responsáveis', 'Comissão Disciplinar', 'Comissão Extraordinária'] as const;
+export type MeetingType = typeof MEETING_TYPES[number];
+
 export interface Ata {
   id?: string;
   meeting_number: number;
   meeting_date: string;            // DATE → ISO string
-  meeting_type?: string;
+  meeting_type?: MeetingType;
   title: string;
   content: string;
   attendees?: string[];            // TEXT[]
@@ -53,11 +62,14 @@ export interface Ata {
 // ATOS (acts)
 // ----------------------
 
+export const ACT_TYPES = ['Admissão em Lenço', 'Investidura de Classe', 'Investidura de Especialidade', 'Nomeação de Cargo', 'Medida Disciplinar', 'Transferência', 'Exclusão'] as const;
+export type ActType = typeof ACT_TYPES[number];
+
 export interface Ato {
   id?: string;
   act_number: number;
   act_date: string;                // DATE → ISO string
-  act_type?: string;
+  act_type?: ActType;
   title: string;
   content: string;
   created_by?: string;             // FK → user_profiles.id

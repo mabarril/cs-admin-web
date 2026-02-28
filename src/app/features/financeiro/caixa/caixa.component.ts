@@ -2,12 +2,12 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CaixaService } from '../services/caixa.service';
-import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_LABELS } from '../../../core/models/financeiro.model';
+import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_LABELS, FORMAS_PAGAMENTO, FormaPagamento } from '../../../core/models/financeiro.model';
 
 @Component({
-    selector: 'app-caixa',
-    imports: [CommonModule, ReactiveFormsModule],
-    template: `
+  selector: 'app-caixa',
+  imports: [CommonModule, ReactiveFormsModule],
+  template: `
     <div class="p-6 space-y-6">
 
       <div class="flex items-center justify-between flex-wrap gap-4">
@@ -147,7 +147,12 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
-                <input formControlName="payment_method" type="text" placeholder="Ex: PIX" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <select formControlName="payment_method" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="">Selecione</option>
+                  @for (f of formasPagamento; track f) {
+                    <option [value]="f">{{ f }}</option>
+                  }
+                </select>
               </div>
             </div>
             <div>
@@ -192,6 +197,7 @@ import { LancamentoCaixa, LancamentoCaixaForm, TipoLancamento, TIPO_LANCAMENTO_L
 export class CaixaComponent implements OnInit {
   private service = inject(CaixaService);
   private fb = inject(FormBuilder);
+  readonly formasPagamento = FORMAS_PAGAMENTO;
 
   readonly lancamentos = signal<LancamentoCaixa[]>([]);
   readonly loading = signal(true);
@@ -260,7 +266,7 @@ export class CaixaComponent implements OnInit {
       transaction_date: raw.transaction_date!,
       description: raw.description!,
       amount: raw.amount!,
-      payment_method: raw.payment_method || undefined,
+      payment_method: (raw.payment_method as FormaPagamento) || undefined,
       notes: raw.notes || undefined
     };
     const editando = this.editando();
