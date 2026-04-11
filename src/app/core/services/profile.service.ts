@@ -36,9 +36,9 @@ export class ProfileService {
     }
 
     /**
-     * Atualiza o nome completo do perfil do usuário
+     * Atualiza atributos do perfil do usuário
      */
-    updateProfile(userId: string, updates: Partial<Pick<UserProfile, 'full_name'>>): Observable<UserProfile | null> {
+    updateProfile(userId: string, updates: Partial<Pick<UserProfile, 'full_name' | 'role' | 'active'>>): Observable<UserProfile | null> {
         return from(
             this.supabase.client
                 .from('user_profiles')

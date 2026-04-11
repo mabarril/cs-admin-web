@@ -1,0 +1,81 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-bold text-gray-900">Gestão de Usuários</h1>
+      <p class="mt-2 text-sm text-gray-700">Uma lista com todos os usuários do sistema, perfis e status de ativação. Somente administradores têm acesso a isso.</p>
+    </div>
+  </div>
+
+  <div class="mt-8 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Nome</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Role / Perfil</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Data de Ingresso</th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span class="sr-only">Ações</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              @if (loading()) {
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                        Carregando usuários...
+                    </td>
+                </tr>
+              } @else if (usuarios().length === 0) {
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                        Nenhum usuário encontrado.
+                    </td>
+                </tr>
+              } @else {
+                  @for (user of usuarios(); track user.id) {
+                  <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                      {{ user.full_name }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <select [value]="user.role" (change)="changeRole(user, $event)"
+                          class="mt-1 block py-1 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                          <option value="admin">Administrador</option>
+                          <option value="board">Diretoria</option>
+                          <option value="treasury">Tesouraria</option>
+                          <option value="secretary">Secretaria</option>
+                          <option value="counselor">Conselheiro</option>
+                      </select>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                        <span [ngClass]="{
+                            'bg-green-100 text-green-800': user.active,
+                            'bg-red-100 text-red-800': !user.active
+                            }" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            {{ user.active ? 'Ativado' : 'Aguardando Aprovação' }}
+                        </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {{ user.created_at | date:'dd/MM/yyyy' }}
+                    </td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                      <button type="button" (click)="toggleActive(user)"
+                          class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+                          [ngClass]="user.active ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'">
+                          {{ user.active ? 'Desativar' : 'Aprovar / Ativar' }}
+                      </button>
+                    </td>
+                  </tr>
+                  }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
